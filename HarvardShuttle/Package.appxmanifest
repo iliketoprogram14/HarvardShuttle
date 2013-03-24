@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest">
+  <Identity Name="22022b6f-f1d2-40a7-a7d7-b880007e6b69" Publisher="CN=LocalAdmin" Version="1.0.0.0" />
+  <Properties>
+    <DisplayName>HarvardShuttle</DisplayName>
+    <PublisherDisplayName>LocalAdmin</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Prerequisites>
+    <OSMinVersion>6.2.1</OSMinVersion>
+    <OSMaxVersionTested>6.2.1</OSMaxVersionTested>
+  </Prerequisites>
+  <Resources>
+    <Resource Language="x-generate" />
+  </Resources>
+  <Applications>
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="HarvardShuttle.App">
+      <VisualElements DisplayName="Harvard Shuttle" Logo="Assets\shuttle150.png" SmallLogo="Assets\shuttle30.png" Description="HarvardShuttle" ForegroundText="light" BackgroundColor="#000000">
+        <LockScreen Notification="badgeAndTileText" BadgeLogo="Assets\shuttle24.png" />
+        <DefaultTile ShowName="allLogos" ShortName="Harvard Shuttle" WideLogo="Assets\alvin_and_the_chipmunks_chipwrecked_image-310x150.jpg" />
+        <SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#FFFFFF" />
+      </VisualElements>
+      <Extensions>
+        <Extension Category="windows.backgroundTasks" EntryPoint="TileBackground.LiveTileUpdater">
+          <BackgroundTasks>
+            <Task Type="timer" />
+          </BackgroundTasks>
+        </Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <Capabilities>
+    <Capability Name="internetClient" />
+  </Capabilities>
+</Package>
