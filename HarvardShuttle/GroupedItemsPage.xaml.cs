@@ -67,13 +67,6 @@ namespace HarvardShuttle
             if (!fileExists)
             {
                 string xmlHeader =
-                    /*"<?xml version='1.0' ?>" +
-                    "<!DOCTYPE favorites [" +
-                    "  <!ELEMENT favorites (trip)>" +
-                    "  <!ELEMENT trip     (#PCDATA)>" +
-                    "  <!ATTLIST origin CDATA #REQUIRED>" +
-                    "  <!ATTLIST dest CDATA #REQUIRED>" +
-                    "]>" +*/
                     "<favorites>" + 
                     "<trip origin=\"Boylston Gate\" dest=\"Quad\"></trip>" +
                     "<trip origin=\"Quad\" dest=\"Boylston Gate\"></trip>" +

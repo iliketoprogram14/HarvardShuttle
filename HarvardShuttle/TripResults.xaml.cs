@@ -1,4 +1,5 @@
 ﻿using HarvardShuttle.Data;
+using TileBackground;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -50,13 +51,23 @@ namespace HarvardShuttle
         /// </param>
         /// <param name="pageState">A dictionary of state preserved by this page during an earlier
         /// session.  This will be null the first time a page is visited.</param>
-        protected override void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
+        protected  override void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
         {
             Tuple<string, string> items = (Tuple<string, string>)navigationParameter;
             currOrigin = items.Item1;
             currDest = items.Item2;
 
-            GetSchedule(currOrigin, currDest);
+            //GetSchedule(currOrigin, currDest);
+            //IList<string> resultsList =  Scheduler.CreateSchedule(currOrigin, currDest);
+            Scheduler.CreateSchedule(currOrigin, currDest, this.ResultsList, 
+                this.Height, this.numMinutesTextBlock);
+            UpdateMainUI(currOrigin, currDest);
+            //resultsList.RemoveAt(0);
+            /*foreach (var result in resultsList)
+                this.ResultsList.Items.Add(result);
+            this.ResultsList.Height = (this.ResultsList.Items.Count * 20 < this.Height) ?
+                this.ResultsList.Items.Count * 20 : this.Height;*/
+
             RegisterBackgroundTask();
         }
 
@@ -83,7 +94,7 @@ namespace HarvardShuttle
             int resultCount = 0;
             bool shouldExit = false;
             int numNotifications = 0;
-            
+
             using (WebResponse response = await request.GetResponseAsync())
             using (Stream responseStream = response.GetResponseStream())
             using (XmlReader reader = XmlReader.Create(responseStream))
@@ -97,27 +108,27 @@ namespace HarvardShuttle
 
                         // update list with times
                         if (numNotifications == 0)
-                            UpdateMainUI(minuteCountdown, origin, dest);
+                            UpdateMainUI(/*minuteCountdown.ToString(),*/ origin, dest);
                         else
-                            AddListing(minuteCountdown, numNotifications);
+                            AddListing(minuteCountdown);
 
                         // add tile notifications
                         if (numNotifications == 0 || numNotifications <= 15)
                             numNotifications = AddTileNotifications(minuteCountdown, numNotifications, origin, dest, updater);
 
                         resultCount += 1;
-                        if (resultCount > 20) 
+                        if (resultCount > 20)
                             shouldExit = true;
                     }
                     if (shouldExit) break;
                 }
             }
 
-            this.ResultsList.Height = (this.ResultsList.Items.Count * 20 < this.Height) ? 
+            this.ResultsList.Height = (this.ResultsList.Items.Count * 20 < this.Height) ?
                 this.ResultsList.Items.Count * 20 : this.Height;
         }
 
-        private int GetMinuteCountdown(string nodeValue) 
+        private int GetMinuteCountdown(string nodeValue)
         {
             string[] arr = nodeValue.Split('T');
             string[] date = arr[0].Split('-');
@@ -131,14 +142,14 @@ namespace HarvardShuttle
             return minuteCountdown;
         }
 
-        private void UpdateMainUI(int minuteCountdown, string origin, string dest)
+        public void UpdateMainUI(/*string minuteCountdown, */string origin, string dest)
         {
-            this.numMinutesTextBlock.Text = minuteCountdown.ToString();
+            //this.numMinutesTextBlock.Text = minuteCountdown;
             this.originTextBlock.Text = origin;
             this.destTextBlock.Text = dest;
         }
 
-        private void AddListing(int minuteCountdown, int numNotifications)
+        public void AddListing(int minuteCountdown)
         {
             int hourCountdown = minuteCountdown / 60;
             minuteCountdown = minuteCountdown % 60;
@@ -172,7 +183,7 @@ namespace HarvardShuttle
                 updater.Update(tileNotification);
                 numNotifications++;
 
-                
+
             }
 
             nextMinuteCountdown -= numNotifications;
@@ -193,15 +204,13 @@ namespace HarvardShuttle
             return (int)i;
         }
 
-        private static void RegisterBackgroundTask() {
-            bool backgroundTaskRunning = false;
+        private static void RegisterBackgroundTask()
+        {
             foreach (var task in BackgroundTaskRegistration.AllTasks)
             {
                 if (task.Value.Name == "BackgroundLiveTiles")
                     task.Value.Unregister(true);
             }
-
-            if (backgroundTaskRunning) return;
 
             //var result = await BackgroundExecutionManager.RequestAccessAsync();
             BackgroundTaskBuilder builder = new BackgroundTaskBuilder();
@@ -217,6 +226,11 @@ namespace HarvardShuttle
             builder.AddCondition(condition);
 
             IBackgroundTaskRegistration taskRegistration = builder.Register();
+
+            foreach (var task in BackgroundTaskRegistration.AllTasks)
+            {
+                var derp = task.ToString();
+            }
         }
 
         private async void Button_Click_1(object sender, RoutedEventArgs e)
@@ -251,8 +265,8 @@ namespace HarvardShuttle
             {
                 string[] delim = { "</favorites>" };
                 string[] blah = favoritesXml.Split(delim, StringSplitOptions.RemoveEmptyEntries);
-                string newxml = blah[0] + "<trip origin=\"" + 
-                    currOrigin + "\" dest=\"" + currDest + "\"></trip></favorites>" ;
+                string newxml = blah[0] + "<trip origin=\"" +
+                    currOrigin + "\" dest=\"" + currDest + "\"></trip></favorites>";
                 await FileIO.WriteTextAsync(file, newxml);
             }
         }
