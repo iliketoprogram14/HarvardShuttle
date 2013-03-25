@@ -77,36 +77,45 @@ namespace TileBackground
             int minuteCountdown = 0;
             int numNotifications = 0;
             int numListings = 0;
-            using (WebResponse response = await request.GetResponseAsync())
-            using (Stream responseStream = response.GetResponseStream())
-            using (XmlReader reader = XmlReader.Create(responseStream))
+
+            try
             {
-                //bool shouldExit = false;
-                while (reader.Read())
+                var client = new System.Net.Http.HttpClient();
+                HttpResponseMessage response = client.GetAsync(url).Result;
+                using (Stream responseStream = await response.Content.ReadAsStreamAsync())
+                using (XmlReader reader = XmlReader.Create(responseStream))
                 {
-                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "departs")
+                    bool shouldExit = false;
+                    while (reader.Read())
                     {
-                        reader.Read();
-                        minuteCountdown = GetMinuteCountdown(reader.Value);
-
-                        // add listings to main UI
-                        if (resultsList != null)
+                        if (reader.NodeType == XmlNodeType.Element && reader.Name == "departs")
                         {
-                            if (numNotifications == 0)
-                                box.Text = minuteCountdown.ToString();
-                            else
-                                AddListing(minuteCountdown, resultsList);
-                            numListings++;
+                            reader.Read();
+                            minuteCountdown = GetMinuteCountdown(reader.Value);
+
+                            // add listings to main UI
+                            if (resultsList != null)
+                            {
+                                if (numNotifications == 0)
+                                    box.Text = minuteCountdown.ToString();
+                                else
+                                    AddListing(minuteCountdown, resultsList);
+                                numListings++;
+                            }
+
+                            // add tile notifications
+                            if (numNotifications <= maxNotifications)
+                                numNotifications = AddTileNotifications(minuteCountdown, numNotifications, origin, dest, updater);
+
+                            if (numListings > maxListings)
+                                break;
                         }
-
-                        // add tile notifications
-                        if (numNotifications <= maxNotifications)
-                            numNotifications = AddTileNotifications(minuteCountdown, numNotifications, origin, dest, updater);
-
-                        if (numListings > maxListings)
-                            break;
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                int d = 0;
             }
         }
 
