@@ -89,10 +89,9 @@
             Padding="116,137,40,46"
             ItemsSource="{Binding Source={StaticResource groupedItemsViewSource}}"
             ItemTemplateSelector="{StaticResource MainSelector}"
-            SelectionMode="Single"
+            SelectionMode="None"
             IsSwipeEnabled="false"
             IsItemClickEnabled="True"
-            IsRightTapEnabled="True"
             ItemClick="ItemView_ItemClick" Grid.ColumnSpan="2"
             SelectedIndex="-1"
             >
@@ -219,14 +218,4 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
     </Grid>
-    <Page.BottomAppBar>
-        <AppBar x:Name="bottomAppBar" AutomationProperties.Name="My Bottom App Bar" IsRightTapEnabled="True" IsSticky="True">
-            <Grid>
-                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
-                    <Button Name="MyFavoriteButton" Style="{StaticResource FavoriteAppBarButtonStyle}" Tag="MyFavorite" Click="MyFavoriteButton_Click" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal"/>
-            </Grid>
-        </AppBar>
-    </Page.BottomAppBar>
 </common:LayoutAwarePage>
