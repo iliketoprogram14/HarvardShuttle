@@ -97,7 +97,7 @@ namespace HarvardShuttle
             this.destTextBlock.Text = dest;
         }
 
-        private async void UpdateFavButton(string currOrigin, string currDest)
+        private void UpdateFavButton(string currOrigin, string currDest)
         {
             // Grab the favorites xml
             //StorageFile file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStore);

@@ -1,4 +1,5 @@
 ﻿using HarvardShuttle.Data;
+using HarvardShuttle;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,6 +16,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using System.Collections.ObjectModel;
 
 // The Grouped Items Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234231
 
@@ -27,6 +29,9 @@ namespace HarvardShuttle
     {
         public static string favoritesStore = "favorites.xml";
         public static StorageFolder localFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
+        private bool hasLoaded;
+        private ObservableCollection<DataGroup> myGroups;
+        DataSource myDataSource;
 
         public GroupedItemsPage()
         {
@@ -44,16 +49,28 @@ namespace HarvardShuttle
         /// session.  This will be null the first time a page is visited.</param>
         protected override async void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
         {
+            hasLoaded = false;
+
             // Update the store
             await InitFavoritesStore();
             StorageFile file = await localFolder.GetFileAsync(favoritesStore);
             string favoritesXml = await FileIO.ReadTextAsync(file);
-            DataSource.UpdateFavorites(favoritesXml);
+            myDataSource = new DataSource();
+            myDataSource.UpdateFavorites(favoritesXml);
 
             // Load the view
-            var sampleDataGroups = DataSource.GetGroups((String)navigationParameter);
-            this.DefaultViewModel["Groups"] = sampleDataGroups;
+            //var a = DataSource.AllGroups();
+            //var groups = (ObservableCollection<DataGroup>)DataSource.GetGroups((String)navigationParameter);
+            var derp = myDataSource.AllGroups;
+            this.DefaultViewModel["Groups"] = derp;
+            //this.groupedItemsViewSource.Source = myDataSource.AllGroups;
+            myGroups = myDataSource.AllGroups;
+            //this.itemGridView.ItemsSource = groups;
             var result = await BackgroundExecutionManager.RequestAccessAsync();
+
+            this.itemGridView.SelectionChanged += itemGridView_SelectionChanged;
+            this.itemGridView.SelectedIndex = -1;
+            hasLoaded = true;
         }
 
         private async Task InitFavoritesStore()
@@ -61,6 +78,7 @@ namespace HarvardShuttle
             bool fileExists = true;
             try {
                 StorageFile file = await localFolder.GetFileAsync(favoritesStore);
+                fileExists = true;
             }
             catch (Exception) {
                 fileExists = false;
@@ -92,13 +110,87 @@ namespace HarvardShuttle
                 this.Frame.Navigate(typeof(Destination), item);
             else
             {
-                string origin = item.BigTitle;
-                string dest = item.BigSubtitle;
+                string origin = item.Title;
+                string dest = item.Subtitle;
                 this.Frame.Navigate(typeof(TripResults), Tuple.Create(origin, dest));
             }
 
         }
 
-        //private async Task
+        private void Item_RightTapped(object sender, RightTappedRoutedEventArgs e)
+        {
+        }
+
+        private void itemGridView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!hasLoaded)
+                return;
+            var item = (DataItem)this.itemGridView.SelectedItem;
+
+            if (item.Group.Title != "Favorite Trips")
+                return;
+
+            bottomAppBar.IsOpen = !bottomAppBar.IsOpen;
+        }
+
+        private async void MyFavoriteButton_Click(object sender, RoutedEventArgs e)
+        {
+            bottomAppBar.IsOpen = false;
+
+            var item = (DataItem)this.itemGridView.SelectedItem;
+            string origin = item.Title;
+            string dest = item.Subtitle;
+            //var fack = this.DefaultViewModel["Groups"];
+            //DataSource.ClearFavorite(item);
+            /*DataGroup g = groups[1];
+            var list = g.Items;
+            var idx = g.Items.IndexOf(item);
+            var blegh = g.Items.GetType();
+            g.Items.Remove(item);*/
+            var g = (ObservableCollection<DataGroup>)this.groupedItemsViewSource.Source;
+            var groupa = g[1];
+            var itemsa = groupa.Items;
+            var idx = itemsa.IndexOf(item);
+            //itemsa.Remove(item);
+
+
+            StorageFile file = await localFolder.GetFileAsync(favoritesStore);
+            string toRemove = "<trip origin=\"" + origin + "\" dest=\"" + dest + "\"></trip>";
+            string xml = await FileIO.ReadTextAsync(file);
+            xml = xml.Replace(toRemove, "");
+            await FileIO.WriteTextAsync(file, xml);
+
+            //myDataSource.UpdateFavorites(xml);
+            var b = myGroups[1];
+            var it = b.Items;
+            //it.Remove(item);
+            myDataSource = new DataSource();
+            myDataSource.UpdateFavorites(xml);
+
+            // Load the view
+            //var a = DataSource.AllGroups();
+            //var groups = (ObservableCollection<DataGroup>)DataSource.GetGroups((String)navigationParameter);
+            var derp = myDataSource.AllGroups;
+            myGroups = myDataSource.AllGroups;
+            this.itemGridView.ItemsSource = myGroups;
+            this.itemGridView.da
+            //this.groupedItemsViewSource.Source = myDataSource.AllGroups;
+            //this.DefaultViewModel["Groups"] = derp;
+            //this.groupedItemsViewSource.Source = myDataSource.AllGroups;
+            //myGroups = myDataSource.AllGroups;
+
+
+            //var fack = this.groupedItemsViewSource.Source;
+
+
+            // Load the view
+            //var a = DataSource.AllGroups();
+            //var groupsa = (ObservableCollection<DataGroup>)DataSource.GetGroups("AllGroups");
+            //this.DefaultViewModel["Groups"] = groupsa;
+
+
+            //DataSource.UpdateFavorites(favoritesStore.Replace(toRemove,""));
+        }
+
     }
 }

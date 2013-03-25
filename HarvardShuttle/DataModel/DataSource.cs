@@ -37,19 +37,15 @@ namespace HarvardShuttle.Data
         {
             this._uniqueId = uniqueId;
             if (imagePath == "") {
-                this._imagePath = "Assets/DarkGray.png";
-                this._bigtitle = title;
-                this._bigsubtitle = subtitle;
-                this._title = "";
-                this._subtitle = "";
+                this._imagePath = "StopImages/" + title.Replace(" ", "").Replace("-", "").ToLower().ToString() + ".jpg";
+                this._imagePath2 = "StopImages/" + subtitle.Replace(" ", "").Replace("-", "").ToLower().ToString() + ".jpg";
             }
             else {
                 this._imagePath = imagePath;
-                this._bigtitle = "";
-                this._bigsubtitle = "";
-                this._title = title;
-                this._subtitle = subtitle;
+                this._imagePath2 = "";
             }
+            this._title = title;
+            this._subtitle = subtitle;
             this._description = description;
         }
 
@@ -58,20 +54,6 @@ namespace HarvardShuttle.Data
         {
             get { return this._uniqueId; }
             set { this.SetProperty(ref this._uniqueId, value); }
-        }
-
-        private string _bigtitle = string.Empty;
-        public string BigTitle
-        {
-            get { return this._bigtitle; }
-            set { this.SetProperty(ref this._bigtitle, value);  }
-        }
-
-        private string _bigsubtitle = string.Empty;
-        public string BigSubtitle
-        {
-            get { return this._bigsubtitle; }
-            set { this.SetProperty(ref this._bigsubtitle, value); }
         }
 
         private string _title = string.Empty;
@@ -119,6 +101,32 @@ namespace HarvardShuttle.Data
         {
             this._image = null;
             this._imagePath = path;
+            this.OnPropertyChanged("Image");
+        }
+
+        private ImageSource _image2 = null;
+        private String _imagePath2 = null;
+        public ImageSource Image2
+        {
+            get
+            {
+                if (this._image2 == null && this._imagePath2 != null) {
+                    this._image2 = new BitmapImage(new Uri(DataCommon._baseUri, this._imagePath2));
+                }
+                return this._image2;
+            }
+
+            set
+            {
+                this._imagePath2 = null;
+                this.SetProperty(ref this._image2, value);
+            }
+        }
+
+        public void SetImage2(String path)
+        {
+            this._image2 = null;
+            this._imagePath2 = path;
             this.OnPropertyChanged("Image");
         }
 
@@ -209,6 +217,8 @@ namespace HarvardShuttle.Data
                 case NotifyCollectionChangedAction.Remove:
                     if (e.OldStartingIndex < itemLimit)
                     {
+                        var d = TopItems;
+                        var b = TopItems[e.OldStartingIndex];
                         TopItems.RemoveAt(e.OldStartingIndex);
                         if (Items.Count >= itemLimit)
                         {
@@ -235,13 +245,16 @@ namespace HarvardShuttle.Data
         private ObservableCollection<DataItem> _items = new ObservableCollection<DataItem>();
         public ObservableCollection<DataItem> Items
         {
-            get { return this._items; }
+            get
+            {
+                return this._items;
+            }
         }
 
         private ObservableCollection<DataItem> _topItem = new ObservableCollection<DataItem>();
         public ObservableCollection<DataItem> TopItems
         {
-            get {return this._topItem; }
+            get { return this._topItem; }
         }
     }
 
@@ -334,11 +347,11 @@ namespace HarvardShuttle.Data
             this.AllGroups.Add(group2);
         }
 
-        public static void UpdateFavorites(string xml)
+        public void UpdateFavorites(string xml)
         {
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(xml);
-            DataGroup favsGroup = DataSource.GetGroup("Group-2");
+            DataGroup favsGroup = this.AllGroups[1];// DataSource.GetGroup("Group-2");
             favsGroup.Items.Clear();
 
             int i = 1;
@@ -348,8 +361,9 @@ namespace HarvardShuttle.Data
                 string dest = elem.GetAttribute("dest");
 
                 DataItem item = new DataItem("Group-2-Item-"+i.ToString(), origin, dest, "", "from "+origin+" to "+dest, "", favsGroup);
-                DataSource.GetGroup("Group-2").Items.Add(item);
-
+                //DataSource.GetGroup("Group-2").Items.Add(item);
+                favsGroup.Items.Add(item);
+                
                 i++;
             }
         }

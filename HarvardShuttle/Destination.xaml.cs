@@ -43,7 +43,7 @@ namespace HarvardShuttle
         {
             // Create an origin group and a destination group
             var originGroup = DataSource.GetGroup("Group-1");
-            DataGroup destGroup = new DataGroup("To-Group", "To", "", "Assets/DarkGray.png", "");
+            DataGroup destGroup = new DataGroup("Dest-Group", "To", "", "Assets/DarkGray.png", "");
             ObservableCollection<DataGroup> toGroup = new ObservableCollection<DataGroup>();
             origin = (DataItem)navigationParameter;
 
@@ -56,8 +56,9 @@ namespace HarvardShuttle
 
             // Update the view
             this.DefaultViewModel["Groups"] = toGroup;
-            this.DefaultViewModel["Group"] = originGroup;
-            this.DefaultViewModel["Items"] = originGroup.Items;
+            //this.DefaultViewModel["Group"] = originGroup;
+            this.DefaultViewModel["Group"] = destGroup;
+            this.DefaultViewModel["Items"] = destGroup.Items;
         }
 
         void ItemView_ItemClick(object sender, ItemClickEventArgs e)
