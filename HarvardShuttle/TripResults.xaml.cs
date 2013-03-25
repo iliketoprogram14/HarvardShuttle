@@ -36,6 +36,9 @@ namespace HarvardShuttle
         public static TileUpdater updater = null;
         private string currOrigin;
         private string currDest;
+        private bool isFav;
+        private string favoritesXmlCache;
+        private StorageFile file;
 
         public TripResults()
         {
@@ -51,23 +54,25 @@ namespace HarvardShuttle
         /// </param>
         /// <param name="pageState">A dictionary of state preserved by this page during an earlier
         /// session.  This will be null the first time a page is visited.</param>
-        protected  override void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
+        protected async override void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
         {
             Tuple<string, string> items = (Tuple<string, string>)navigationParameter;
             currOrigin = items.Item1;
             currDest = items.Item2;
 
-            //GetSchedule(currOrigin, currDest);
-            //IList<string> resultsList =  Scheduler.CreateSchedule(currOrigin, currDest);
-            Scheduler.CreateSchedule(currOrigin, currDest, this.ResultsList, 
-                this.Height, this.numMinutesTextBlock);
-            UpdateMainUI(currOrigin, currDest);
-            //resultsList.RemoveAt(0);
-            /*foreach (var result in resultsList)
-                this.ResultsList.Items.Add(result);
-            this.ResultsList.Height = (this.ResultsList.Items.Count * 20 < this.Height) ?
-                this.ResultsList.Items.Count * 20 : this.Height;*/
+            file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStore);
+            favoritesXmlCache = await FileIO.ReadTextAsync(file);
 
+            isFav = false;
+
+            // Update the schedule asynchronously
+            Scheduler.CreateSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock);
+            UpdateOriginDest(currOrigin, currDest);
+
+            // Update style of favorite button
+            UpdateFavButton(currOrigin, currDest);
+
+            // Register the background task
             RegisterBackgroundTask();
         }
 
@@ -81,129 +86,54 @@ namespace HarvardShuttle
         {
         }
 
-        private async void GetSchedule(String origin, String dest)
+        /// <summary>
+        /// Updates the UI with the origin and destination
+        /// </summary>
+        /// <param name="origin">The origin of the trip</param>
+        /// <param name="dest">The destination of the trip</param>
+        private void UpdateOriginDest(string origin, string dest)
         {
-            string url = "http://shuttleboy.cs50.net/api/1.2/trips?a=" + origin +
-                "&b=" + dest + "&output=xml";
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-
-            if (updater == null)
-                updater = TileUpdateManager.CreateTileUpdaterForApplication();
-            updater.Clear();
-
-            int resultCount = 0;
-            bool shouldExit = false;
-            int numNotifications = 0;
-
-            using (WebResponse response = await request.GetResponseAsync())
-            using (Stream responseStream = response.GetResponseStream())
-            using (XmlReader reader = XmlReader.Create(responseStream))
-            {
-                while (reader.Read())
-                {
-                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "departs")
-                    {
-                        reader.Read();
-                        int minuteCountdown = GetMinuteCountdown(reader.Value);
-
-                        // update list with times
-                        if (numNotifications == 0)
-                            UpdateMainUI(/*minuteCountdown.ToString(),*/ origin, dest);
-                        else
-                            AddListing(minuteCountdown);
-
-                        // add tile notifications
-                        if (numNotifications == 0 || numNotifications <= 15)
-                            numNotifications = AddTileNotifications(minuteCountdown, numNotifications, origin, dest, updater);
-
-                        resultCount += 1;
-                        if (resultCount > 20)
-                            shouldExit = true;
-                    }
-                    if (shouldExit) break;
-                }
-            }
-
-            this.ResultsList.Height = (this.ResultsList.Items.Count * 20 < this.Height) ?
-                this.ResultsList.Items.Count * 20 : this.Height;
-        }
-
-        private int GetMinuteCountdown(string nodeValue)
-        {
-            string[] arr = nodeValue.Split('T');
-            string[] date = arr[0].Split('-');
-            string[] time = arr[1].Split(':');
-            int departMin = Convert.ToInt32(time[1]);
-            int departHour = Convert.ToInt32(time[0]);
-
-            int minuteCountdown = departHour * 60 + departMin - (DateTime.Now.TimeOfDay.Hours * 60 + DateTime.Now.TimeOfDay.Minutes);
-            if (minuteCountdown < 0) minuteCountdown = (24 * 60) + minuteCountdown;
-
-            return minuteCountdown;
-        }
-
-        public void UpdateMainUI(/*string minuteCountdown, */string origin, string dest)
-        {
-            //this.numMinutesTextBlock.Text = minuteCountdown;
             this.originTextBlock.Text = origin;
             this.destTextBlock.Text = dest;
         }
 
-        public void AddListing(int minuteCountdown)
+        private async void UpdateFavButton(string currOrigin, string currDest)
         {
-            int hourCountdown = minuteCountdown / 60;
-            minuteCountdown = minuteCountdown % 60;
+            // Grab the favorites xml
+            //StorageFile file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStore);
+            //string favoritesXml = await FileIO.ReadTextAsync(file);
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(favoritesXmlCache);
 
-            string msg = (hourCountdown == 0) ? "" : hourCountdown.ToString() + " hour" + ((hourCountdown == 1) ? " " : "s ");
-            msg += minuteCountdown.ToString() + " minute" + ((minuteCountdown == 1) ? "" : "s");
+            int i = 1;
+            bool favExists = false;
+            foreach (XmlElement elem in doc.GetElementsByTagName("trip")) {
+                string origin = elem.GetAttribute("origin");
+                string dest = elem.GetAttribute("dest");
 
-            this.ResultsList.Items.Add(msg);
+                if (origin.Equals(currOrigin) && dest.Equals(currDest)) {
+                    favExists = true;
+                    break;
+                }
 
-        }
-
-        private static int AddTileNotifications(int nextMinuteCountdown, int numNotifications, string origin, string dest, TileUpdater updater)
-        {
-            XmlDocument tileXml = TileUpdateManager.GetTemplateContent(TileTemplateType.TileSquareBlock);
-
-            // set the branding to none
-            XmlElement bindElem = (XmlElement)tileXml.GetElementsByTagName("binding").Item(0);
-            bindElem.SetAttribute("branding", "None");
-
-            // set text
-            XmlNodeList tileTextAttributes = tileXml.GetElementsByTagName("text");
-            tileTextAttributes[1].InnerText = origin + " to " + dest;
-
-            // first live tile
-            if (numNotifications == 0)
-            {
-                tileTextAttributes[0].InnerText = nextMinuteCountdown.ToString();
-                var tileNotification = new TileNotification(tileXml);
-                tileNotification.ExpirationTime = DateTimeOffset.UtcNow.AddMinutes(1.0);
-                tileNotification.Tag = "0";
-                updater.Update(tileNotification);
-                numNotifications++;
-
-
-            }
-
-            nextMinuteCountdown -= numNotifications;
-
-            // set notification
-            double i = (double)numNotifications;
-            while (nextMinuteCountdown >= 0 && i < 15)
-            {
-                tileTextAttributes[0].InnerText = nextMinuteCountdown.ToString();
-                var tileNotification = new ScheduledTileNotification(tileXml, DateTime.Now.AddMinutes(i));
-                tileNotification.ExpirationTime = DateTime.UtcNow.AddMinutes(1.0 + i);
-                tileNotification.Tag = i.ToString();
-                updater.AddToSchedule(tileNotification);
                 i++;
-                nextMinuteCountdown--;
             }
 
-            return (int)i;
+            isFav = favExists;
+            UpdateButtonStyle();
         }
 
+        private void UpdateButtonStyle()
+        {
+            if (isFav)
+                this.FavoriteButton.Style = (Style)Application.Current.Resources["UnfavoriteAppBarButtonStyle"];
+            else 
+                this.FavoriteButton.Style = (Style)Application.Current.Resources["FavoriteAppBarButtonStyle"];
+        }
+
+        /// <summary>
+        /// Registers a background task to update the live tile
+        /// </summary>
         private static void RegisterBackgroundTask()
         {
             foreach (var task in BackgroundTaskRegistration.AllTasks)
@@ -233,42 +163,35 @@ namespace HarvardShuttle
             }
         }
 
+        /// <summary>
+        /// Event handler for favorites button; adds trip to the favorites section on the main screen
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            // add to the favorites screen
-            StorageFile file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStore);
-            string favoritesXml = await FileIO.ReadTextAsync(file);
+            //StorageFile file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStore);
+            //string favoritesXml = await FileIO.ReadTextAsync(file);
             XmlDocument doc = new XmlDocument();
-            doc.LoadXml(favoritesXml);
-            SampleDataGroup favsGroup = SampleDataSource.GetGroup("Group-2");
+            doc.LoadXml(favoritesXmlCache);
 
-            int i = 1;
-            bool favExists = false;
-            foreach (XmlElement elem in doc.GetElementsByTagName("trip"))
-            {
-                string origin = elem.GetAttribute("origin");
-                string dest = elem.GetAttribute("dest");
-
-                if (origin.Equals(currOrigin) && dest.Equals(currDest))
-                {
-                    favExists = true;
-                    break;
-                }
-
-                SampleDataItem item = new SampleDataItem("Group-2-Item-" + i.ToString(), origin, dest, "", "from " + origin + " to " + dest, "", favsGroup);
-                SampleDataSource.GetGroup("Group-2").Items.Add(item);
-
-                i++;
+            // remove from favorites
+            string newxml;
+            if (isFav) {
+                string toRemove = "<trip origin=\"" + currOrigin + "\" dest=\"" + currDest + "\"></trip>";
+                newxml = favoritesXmlCache.Replace(toRemove, "");
             }
-
-            if (!favExists)
-            {
+            // add to favorites
+            else {
                 string[] delim = { "</favorites>" };
-                string[] blah = favoritesXml.Split(delim, StringSplitOptions.RemoveEmptyEntries);
-                string newxml = blah[0] + "<trip origin=\"" +
+                string[] blah = favoritesXmlCache.Split(delim, StringSplitOptions.RemoveEmptyEntries);
+                newxml = blah[0] + "<trip origin=\"" +
                     currOrigin + "\" dest=\"" + currDest + "\"></trip></favorites>";
-                await FileIO.WriteTextAsync(file, newxml);
             }
+            favoritesXmlCache = newxml;
+            isFav = !isFav;
+            UpdateButtonStyle();
+            await FileIO.WriteTextAsync(file, favoritesXmlCache);
         }
 
     }

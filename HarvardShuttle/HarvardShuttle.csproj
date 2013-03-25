@@ -143,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\alvin_and_the_chipmunks_chipwrecked_image-310x150.jpg" />
+    <Content Include="Assets\LightGraySmall.png" />
     <Content Include="Assets\Logo.png" />
     <Content Include="Assets\shuttle150.png" />
     <Content Include="Assets\shuttle24.png" />
@@ -153,6 +154,22 @@
     <Content Include="Assets\LightGray.png" />
     <Content Include="Assets\MediumGray.png" />
     <Content Include="Assets\DarkGray.png" />
+    <Content Include="StopImages\20gardenst.jpg" />
+    <Content Include="StopImages\boylstongate.jpg" />
+    <Content Include="StopImages\harvardsquare.jpg" />
+    <Content Include="StopImages\ilab.jpg" />
+    <Content Include="StopImages\kennedyschool.jpg" />
+    <Content Include="StopImages\lamontlibrary.jpg" />
+    <Content Include="StopImages\lawschool.jpg" />
+    <Content Include="StopImages\massavegardenst.jpg" />
+    <Content Include="StopImages\matherhouse.jpg" />
+    <Content Include="StopImages\maxwelldworkin.jpg" />
+    <Content Include="StopImages\memorialhall.jpg" />
+    <Content Include="StopImages\peabodyterrace.jpg" />
+    <Content Include="StopImages\quad.jpg" />
+    <Content Include="StopImages\soldiersfieldpark.jpg" />
+    <Content Include="StopImages\stadium.jpg" />
+    <Content Include="StopImages\winthrophouse.jpg" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">

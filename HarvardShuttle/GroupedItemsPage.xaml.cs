@@ -44,28 +44,29 @@ namespace HarvardShuttle
         /// session.  This will be null the first time a page is visited.</param>
         protected override async void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
         {
-            // TODO: Create an appropriate data model for your problem domain to replace the sample data
+            // Update the store
             await InitFavoritesStore();
             StorageFile file = await localFolder.GetFileAsync(favoritesStore);
             string favoritesXml = await FileIO.ReadTextAsync(file);
-            SampleDataSource.UpdateFavorites(favoritesXml);
-            var sampleDataGroups = SampleDataSource.GetGroups((String)navigationParameter);
+            DataSource.UpdateFavorites(favoritesXml);
+
+            // Load the view
+            var sampleDataGroups = DataSource.GetGroups((String)navigationParameter);
             this.DefaultViewModel["Groups"] = sampleDataGroups;
             var result = await BackgroundExecutionManager.RequestAccessAsync();
         }
 
         private async Task InitFavoritesStore()
         {
-            bool fileExists = false;
-            try
-            {
+            bool fileExists = true;
+            try {
                 StorageFile file = await localFolder.GetFileAsync(favoritesStore);
-                fileExists = true;
             }
-            catch (Exception) { }
+            catch (Exception) {
+                fileExists = false;
+            }
 
-            if (!fileExists)
-            {
+            if (!fileExists) {
                 string xmlHeader =
                     "<favorites>" + 
                     "<trip origin=\"Boylston Gate\" dest=\"Quad\"></trip>" +
@@ -74,21 +75,6 @@ namespace HarvardShuttle
                 StorageFile file = await localFolder.CreateFileAsync(favoritesStore, CreationCollisionOption.ReplaceExisting);
                 await FileIO.WriteTextAsync(file, xmlHeader);
             }
-        }
-
-        /// <summary>
-        /// Invoked when a group header is clicked.
-        /// </summary>
-        /// <param name="sender">The Button used as a group header for the selected group.</param>
-        /// <param name="e">Event data that describes how the click was initiated.</param>
-        void Header_Click(object sender, RoutedEventArgs e)
-        {
-            // Determine what group the Button instance represents
-            var group = (sender as FrameworkElement).DataContext;
-
-            // Navigate to the appropriate destination page, configuring the new page
-            // by passing required information as a navigation parameter
-            this.Frame.Navigate(typeof(GroupDetailPage), ((SampleDataGroup)group).UniqueId);
         }
 
         /// <summary>
@@ -101,16 +87,18 @@ namespace HarvardShuttle
         {
             // Navigate to the appropriate destination page, configuring the new page
             // by passing required information as a navigation parameter
-            var item = (SampleDataItem)e.ClickedItem;
+            var item = (DataItem)e.ClickedItem;
             if (item.Group.UniqueId.Equals("Group-1"))
                 this.Frame.Navigate(typeof(Destination), item);
             else
             {
-                string origin = item.Title;
-                string dest = item.Subtitle;
+                string origin = item.BigTitle;
+                string dest = item.BigSubtitle;
                 this.Frame.Navigate(typeof(TripResults), Tuple.Create(origin, dest));
             }
 
         }
+
+        //private async Task
     }
 }

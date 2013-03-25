@@ -1106,13 +1106,13 @@
         <Setter Property="AutomationProperties.AutomationId" Value="DisableUpdatesAppBarButton"/>
         <Setter Property="AutomationProperties.Name" Value="Disable Updates"/>
         <Setter Property="Content" Value="&#xE194;"/>
-    </Style>
+    </Style>-->
     <Style x:Key="UnfavoriteAppBarButtonStyle" TargetType="ButtonBase" BasedOn="{StaticResource AppBarButtonStyle}">
         <Setter Property="AutomationProperties.AutomationId" Value="UnfavoriteAppBarButton"/>
         <Setter Property="AutomationProperties.Name" Value="Unfavorite"/>
         <Setter Property="Content" Value="&#xE195;"/>
     </Style>
-    <Style x:Key="UnPinAppBarButtonStyle" TargetType="ButtonBase" BasedOn="{StaticResource AppBarButtonStyle}">
+    <!--<Style x:Key="UnPinAppBarButtonStyle" TargetType="ButtonBase" BasedOn="{StaticResource AppBarButtonStyle}">
         <Setter Property="AutomationProperties.AutomationId" Value="UnPinAppBarButton"/>
         <Setter Property="AutomationProperties.Name" Value="Unpin"/>
         <Setter Property="Content" Value="&#xE196;"/>

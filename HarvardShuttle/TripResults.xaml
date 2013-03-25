@@ -85,7 +85,7 @@
         <AppBar x:Name="bottomAppBar" AutomationProperties.Name="Bottom App Bar">
             <Grid>
                 <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
-                    <Button Style="{StaticResource FavoriteAppBarButtonStyle}" Tag="Favorite" Click="Button_Click_1"/>
+                    <Button Name="FavoriteButton" Style="{StaticResource FavoriteAppBarButtonStyle}" Tag="Favorite" Click="Button_Click_1"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal"/>
             </Grid>

@@ -15,6 +15,8 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
 // The Group Detail Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234229
+// CURRENTLY NOT USED; IGNORE FOR NOW; WARNING WILL ROBINSON; CAPS LOCK
+// NEED TO POPULATE WITH DATA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 namespace HarvardShuttle
 {
@@ -40,8 +42,8 @@ namespace HarvardShuttle
         /// session.  This will be null the first time a page is visited.</param>
         protected override void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
         {
-            // TODO: Create an appropriate data model for your problem domain to replace the sample data
-            var group = SampleDataSource.GetGroup((String)navigationParameter);
+            // Grab the destinations and load here
+            var group = DataSource.GetGroup((String)navigationParameter);
             this.DefaultViewModel["Group"] = group;
             this.DefaultViewModel["Items"] = group.Items;
         }
@@ -56,7 +58,7 @@ namespace HarvardShuttle
         {
             // Navigate to the appropriate destination page, configuring the new page
             // by passing required information as a navigation parameter
-            var itemId = ((SampleDataItem)e.ClickedItem).UniqueId;
+            var itemId = ((DataItem)e.ClickedItem).UniqueId;
             this.Frame.Navigate(typeof(ItemDetailPage), itemId);
         }
     }

@@ -21,6 +21,8 @@ namespace TileBackground
     public static class Scheduler
     {
         private static string store = "last_origin_dest.xml";
+        private static int maxListings = 30;
+        private static int maxNotifications = 15;
 
         public static void CreateSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock box)
         {
@@ -30,9 +32,17 @@ namespace TileBackground
             UpdateLastOriginDest(new_origin, new_dest);
         }
 
-        public static void CreateExtendedSchedule()
+        public async static void CreateExtendedSchedule()
         {
-            GetData();
+            StorageFile file = await ApplicationData.Current.LocalFolder.GetFileAsync(Scheduler.store);
+            string storeXml = await FileIO.ReadTextAsync(file);
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(storeXml);
+
+            string origin = doc.GetElementsByTagName("origin")[0].InnerText;
+            string dest = doc.GetElementsByTagName("dest")[0].InnerText;
+
+            CallService(origin, dest, null, null);
         }
 
         private async static void UpdateLastOriginDest(string new_origin, string new_dest)
@@ -55,37 +65,23 @@ namespace TileBackground
             await FileIO.WriteTextAsync(file, xml);
         }
 
-        private async static void GetData()
-        {
-            StorageFile file = await ApplicationData.Current.LocalFolder.GetFileAsync(Scheduler.store);
-            string storeXml = await FileIO.ReadTextAsync(file);
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(storeXml);
-
-            string origin = doc.GetElementsByTagName("origin")[0].InnerText;
-            string dest = doc.GetElementsByTagName("dest")[0].InnerText;
-
-            CallService(origin, dest,  null, null);
-        }
-
         private async static void CallService(string origin, string dest, ListView resultsList, TextBlock box)
         {
             string url = "http://shuttleboy.cs50.net/api/1.2/trips?a=" + origin +
                 "&b=" + dest + "&output=xml";
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
 
-            var updater = TileUpdateManager.CreateTileUpdaterForApplication();
-            updater.EnableNotificationQueue(true);
-            updater.Clear();
+            TileUpdater updater = CreateNewTileUpdater();
 
             // get the next countdown from Shuttleboy
             int minuteCountdown = 0;
             int numNotifications = 0;
+            int numListings = 0;
             using (WebResponse response = await request.GetResponseAsync())
             using (Stream responseStream = response.GetResponseStream())
             using (XmlReader reader = XmlReader.Create(responseStream))
             {
-                bool shouldExit = false;
+                //bool shouldExit = false;
                 while (reader.Read())
                 {
                     if (reader.NodeType == XmlNodeType.Element && reader.Name == "departs")
@@ -93,21 +89,23 @@ namespace TileBackground
                         reader.Read();
                         minuteCountdown = GetMinuteCountdown(reader.Value);
 
+                        // add listings to main UI
                         if (resultsList != null)
                         {
                             if (numNotifications == 0)
                                 box.Text = minuteCountdown.ToString();
                             else
                                 AddListing(minuteCountdown, resultsList);
+                            numListings++;
                         }
 
                         // add tile notifications
-                        if (numNotifications == 0 || numNotifications <= 20)
+                        if (numNotifications <= maxNotifications)
                             numNotifications = AddTileNotifications(minuteCountdown, numNotifications, origin, dest, updater);
-                        else
-                            shouldExit = true;
+
+                        if (numListings > maxListings)
+                            break;
                     }
-                    if (shouldExit) break;
                 }
             }
         }
@@ -137,10 +135,9 @@ namespace TileBackground
             resultsList.Items.Add(msg);
         }
 
-
         private static int AddTileNotifications(int nextMinuteCountdown, int numNotifications, string origin, string dest, TileUpdater updater)
         {
-            XmlDocument tileXml = TileUpdateManager.GetTemplateContent(TileTemplateType.TileSquareBlock);
+            XmlDocument tileXml = TileUpdateManager.GetTemplateContent(TileTemplateType.TileSquareText02);
 
             // set the branding to none
             XmlElement bindElem = (XmlElement)tileXml.GetElementsByTagName("binding").Item(0);
@@ -150,10 +147,11 @@ namespace TileBackground
             XmlNodeList tileTextAttributes = tileXml.GetElementsByTagName("text");
             tileTextAttributes[1].InnerText = origin + " to " + dest;
 
-            // first live tile
+            // set current live tile
+            DateTime now = DateTime.Now;
             if (numNotifications == 0)
             {
-                tileTextAttributes[0].InnerText = nextMinuteCountdown.ToString();
+                tileTextAttributes[0].InnerText = GenTileString(nextMinuteCountdown);
                 var tileNotification = new TileNotification(tileXml);
                 tileNotification.ExpirationTime = DateTimeOffset.UtcNow.AddMinutes(1.0);
                 tileNotification.Tag = "0";
@@ -163,13 +161,13 @@ namespace TileBackground
 
             nextMinuteCountdown -= numNotifications;
 
-            // set notification
+            // schedule future live tiles
             double i = (double)numNotifications;
-            while (nextMinuteCountdown >= 0 && i < 15)
+            while (nextMinuteCountdown >= 0 && i <= maxNotifications)
             {
-                tileTextAttributes[0].InnerText = nextMinuteCountdown.ToString();
-                var tileNotification = new ScheduledTileNotification(tileXml, DateTime.Now.AddMinutes(i));
-                tileNotification.ExpirationTime = DateTime.UtcNow.AddMinutes(1.0 + i);
+                tileTextAttributes[0].InnerText = GenTileString(nextMinuteCountdown);
+                var tileNotification = new ScheduledTileNotification(tileXml, now.AddMinutes(i));
+                tileNotification.ExpirationTime = now.AddMinutes(1.0 + i); //DateTime.UtcNow.AddMinutes(1.0 + i);
                 tileNotification.Tag = i.ToString();
                 updater.AddToSchedule(tileNotification);
                 i++;
@@ -177,6 +175,28 @@ namespace TileBackground
             }
 
             return (int)i;
+        }
+
+        private static string GenTileString(int minutes)
+        {
+            if (minutes < 100)
+                return minutes.ToString() + " min";
+
+            double hours = Math.Round((double)minutes / 60.0, 1);
+
+            return hours.ToString() + " hrs";
+        }
+
+        private static TileUpdater CreateNewTileUpdater()
+        {
+            var updater = TileUpdateManager.CreateTileUpdaterForApplication();
+            updater.EnableNotificationQueue(true);
+            updater.Clear();
+            foreach (var tile in updater.GetScheduledTileNotifications())
+            {
+                updater.RemoveFromSchedule(tile);
+            }
+            return updater;
         }
 
     }

@@ -23,7 +23,7 @@ namespace HarvardShuttle
     /// </summary>
     public sealed partial class Destination : HarvardShuttle.Common.LayoutAwarePage
     {
-        private SampleDataItem origin;
+        private DataItem origin;
 
         public Destination()
         {
@@ -41,17 +41,20 @@ namespace HarvardShuttle
         /// session.  This will be null the first time a page is visited.</param>
         protected override void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
         {
-            // TODO: Assign a collection of bindable groups to this.DefaultViewModel["Groups"]
-            var originGroup = SampleDataSource.GetGroup("Group-1");
-            SampleDataGroup destGroup = new SampleDataGroup("To-Group", "To", "", "Assets/DarkGray.png", "");
-            ObservableCollection<SampleDataGroup> toGroup = new ObservableCollection<SampleDataGroup>();
-            origin = (SampleDataItem)navigationParameter;
+            // Create an origin group and a destination group
+            var originGroup = DataSource.GetGroup("Group-1");
+            DataGroup destGroup = new DataGroup("To-Group", "To", "", "Assets/DarkGray.png", "");
+            ObservableCollection<DataGroup> toGroup = new ObservableCollection<DataGroup>();
+            origin = (DataItem)navigationParameter;
 
-            foreach (SampleDataItem item in originGroup.Items) {
-                if (!navigationParameter.Equals(item)) destGroup.Items.Add(item);
+            // Add all destinations that aren't the origin to the destination group
+            foreach (DataItem item in originGroup.Items) {
+                if (!navigationParameter.Equals(item)) 
+                    destGroup.Items.Add(item);
             }
             toGroup.Add(destGroup);
 
+            // Update the view
             this.DefaultViewModel["Groups"] = toGroup;
             this.DefaultViewModel["Group"] = originGroup;
             this.DefaultViewModel["Items"] = originGroup.Items;
@@ -59,7 +62,7 @@ namespace HarvardShuttle
 
         void ItemView_ItemClick(object sender, ItemClickEventArgs e)
         {
-            var dest = (SampleDataItem)e.ClickedItem;
+            var dest = (DataItem)e.ClickedItem;
             this.Frame.Navigate(typeof(TripResults), Tuple.Create(origin.Title, dest.Title));
         }
     }

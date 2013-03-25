@@ -13,6 +13,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using System.Collections.Specialized;
 using System.Xml;
 using Windows.Data.Xml.Dom;
+using System.IO;
 
 // The data model defined by this file serves as a representative example of a strongly-typed
 // model that supports notification when members are added, removed, or modified.  The property
@@ -24,21 +25,32 @@ using Windows.Data.Xml.Dom;
 namespace HarvardShuttle.Data
 {
     /// <summary>
-    /// Base class for <see cref="SampleDataItem"/> and <see cref="SampleDataGroup"/> that
+    /// Base class for <see cref="DataItem"/> and <see cref="DataGroup"/> that
     /// defines properties common to both.
     /// </summary>
     [Windows.Foundation.Metadata.WebHostHidden]
-    public abstract class SampleDataCommon : HarvardShuttle.Common.BindableBase
+    public abstract class DataCommon : HarvardShuttle.Common.BindableBase
     {
         private static Uri _baseUri = new Uri("ms-appx:///");
 
-        public SampleDataCommon(String uniqueId, String title, String subtitle, String imagePath, String description)
+        public DataCommon(String uniqueId, String title, String subtitle, String imagePath, String description)
         {
             this._uniqueId = uniqueId;
-            this._title = title;
-            this._subtitle = subtitle;
+            if (imagePath == "") {
+                this._imagePath = "Assets/DarkGray.png";
+                this._bigtitle = title;
+                this._bigsubtitle = subtitle;
+                this._title = "";
+                this._subtitle = "";
+            }
+            else {
+                this._imagePath = imagePath;
+                this._bigtitle = "";
+                this._bigsubtitle = "";
+                this._title = title;
+                this._subtitle = subtitle;
+            }
             this._description = description;
-            this._imagePath = imagePath;
         }
 
         private string _uniqueId = string.Empty;
@@ -46,6 +58,20 @@ namespace HarvardShuttle.Data
         {
             get { return this._uniqueId; }
             set { this.SetProperty(ref this._uniqueId, value); }
+        }
+
+        private string _bigtitle = string.Empty;
+        public string BigTitle
+        {
+            get { return this._bigtitle; }
+            set { this.SetProperty(ref this._bigtitle, value);  }
+        }
+
+        private string _bigsubtitle = string.Empty;
+        public string BigSubtitle
+        {
+            get { return this._bigsubtitle; }
+            set { this.SetProperty(ref this._bigsubtitle, value); }
         }
 
         private string _title = string.Empty;
@@ -77,7 +103,7 @@ namespace HarvardShuttle.Data
             {
                 if (this._image == null && this._imagePath != null)
                 {
-                    this._image = new BitmapImage(new Uri(SampleDataCommon._baseUri, this._imagePath));
+                    this._image = new BitmapImage(new Uri(DataCommon._baseUri, this._imagePath));
                 }
                 return this._image;
             }
@@ -105,9 +131,9 @@ namespace HarvardShuttle.Data
     /// <summary>
     /// Generic item data model.
     /// </summary>
-    public class SampleDataItem : SampleDataCommon
+    public class DataItem : DataCommon
     {
-        public SampleDataItem(String uniqueId, String title, String subtitle, String imagePath, String description, String content, SampleDataGroup group)
+        public DataItem(String uniqueId, String title, String subtitle, String imagePath, String description, String content, DataGroup group)
             : base(uniqueId, title, subtitle, imagePath, description)
         {
             this._content = content;
@@ -121,8 +147,8 @@ namespace HarvardShuttle.Data
             set { this.SetProperty(ref this._content, value); }
         }
 
-        private SampleDataGroup _group;
-        public SampleDataGroup Group
+        private DataGroup _group;
+        public DataGroup Group
         {
             get { return this._group; }
             set { this.SetProperty(ref this._group, value); }
@@ -132,11 +158,11 @@ namespace HarvardShuttle.Data
     /// <summary>
     /// Generic group data model.
     /// </summary>
-    public class SampleDataGroup : SampleDataCommon
+    public class DataGroup : DataCommon
     {
         private int itemLimit = 20;
 
-        public SampleDataGroup(String uniqueId, String title, String subtitle, String imagePath, String description)
+        public DataGroup(String uniqueId, String title, String subtitle, String imagePath, String description)
             : base(uniqueId, title, subtitle, imagePath, description)
         {
             Items.CollectionChanged += ItemsCollectionChanged;
@@ -206,14 +232,14 @@ namespace HarvardShuttle.Data
             }
         }
 
-        private ObservableCollection<SampleDataItem> _items = new ObservableCollection<SampleDataItem>();
-        public ObservableCollection<SampleDataItem> Items
+        private ObservableCollection<DataItem> _items = new ObservableCollection<DataItem>();
+        public ObservableCollection<DataItem> Items
         {
             get { return this._items; }
         }
 
-        private ObservableCollection<SampleDataItem> _topItem = new ObservableCollection<SampleDataItem>();
-        public ObservableCollection<SampleDataItem> TopItems
+        private ObservableCollection<DataItem> _topItem = new ObservableCollection<DataItem>();
+        public ObservableCollection<DataItem> TopItems
         {
             get {return this._topItem; }
         }
@@ -222,28 +248,28 @@ namespace HarvardShuttle.Data
     /// <summary>
     /// Creates a collection of groups and items with hard-coded content.
     /// 
-    /// SampleDataSource initializes with placeholder data rather than live production
+    /// DataSource initializes with placeholder data rather than live production
     /// data so that sample data is provided at both design-time and run-time.
     /// </summary>
-    public sealed class SampleDataSource
+    public sealed class DataSource
     {
-        private static SampleDataSource _sampleDataSource = new SampleDataSource();
+        private static DataSource _sampleDataSource = new DataSource();
         public List<String> locations = new List<String>();
 
-        private ObservableCollection<SampleDataGroup> _allGroups = new ObservableCollection<SampleDataGroup>();
-        public ObservableCollection<SampleDataGroup> AllGroups
+        private ObservableCollection<DataGroup> _allGroups = new ObservableCollection<DataGroup>();
+        public ObservableCollection<DataGroup> AllGroups
         {
             get { return this._allGroups; }
         }
 
-        public static IEnumerable<SampleDataGroup> GetGroups(string uniqueId)
+        public static IEnumerable<DataGroup> GetGroups(string uniqueId)
         {
             if (!uniqueId.Equals("AllGroups")) throw new ArgumentException("Only 'AllGroups' is supported as a collection of groups");
             
             return _sampleDataSource.AllGroups;
         }
 
-        public static SampleDataGroup GetGroup(string uniqueId)
+        public static DataGroup GetGroup(string uniqueId)
         {
             // Simple linear search is acceptable for small data sets
             var matches = _sampleDataSource.AllGroups.Where((group) => group.UniqueId.Equals(uniqueId));
@@ -251,7 +277,7 @@ namespace HarvardShuttle.Data
             return null;
         }
 
-        public static SampleDataItem GetItem(string uniqueId)
+        public static DataItem GetItem(string uniqueId)
         {
             // Simple linear search is acceptable for small data sets
             var matches = _sampleDataSource.AllGroups.SelectMany(group => group.Items).Where((item) => item.UniqueId.Equals(uniqueId));
@@ -261,31 +287,30 @@ namespace HarvardShuttle.Data
 
         private void initLocations()
         {
-            locations.Add("114 Western Ave");
             locations.Add("Boylston Gate");
             locations.Add("Harvard Square");
-            locations.Add("HBS Rotary");
-            locations.Add("HKS");
             locations.Add("i-Lab");
+            locations.Add("Kennedy School");
             locations.Add("Lamont Library");
+            locations.Add("Law School");
             locations.Add("Mass Ave Garden St");
             locations.Add("Mather House");
             locations.Add("Maxwell Dworkin");
             locations.Add("Memorial Hall");
             locations.Add("Peabody Terrace");
-            locations.Add("Pound Hall");
             locations.Add("Quad");
             locations.Add("Soldiers Field Park");
             locations.Add("Stadium");
             locations.Add("Winthrop House");
+            locations.Add("20 Garden St");
         }
 
-        public SampleDataSource()
+        public DataSource()
         {
             String ITEM_CONTENT = String.Format("Item Content: {0}\n\n{0}\n\n{0}\n\n{0}\n\n{0}\n\n{0}\n\n{0}",
                         "Curabitur class aliquam vestibulum nam curae maecenas sed integer cras phasellus suspendisse quisque donec dis praesent accumsan bibendum pellentesque condimentum adipiscing etiam consequat vivamus dictumst aliquam duis convallis scelerisque est parturient ullamcorper aliquet fusce suspendisse nunc hac eleifend amet blandit facilisi condimentum commodo scelerisque faucibus aenean ullamcorper ante mauris dignissim consectetuer nullam lorem vestibulum habitant conubia elementum pellentesque morbi facilisis arcu sollicitudin diam cubilia aptent vestibulum auctor eget dapibus pellentesque inceptos leo egestas interdum nulla consectetuer suspendisse adipiscing pellentesque proin lobortis sollicitudin augue elit mus congue fermentum parturient fringilla euismod feugiat");
 
-            var group1 = new SampleDataGroup("Group-1",
+            var group1 = new DataGroup("Group-1",
                     "From",
                     "Group Subtitle: 1",
                     "Assets/DarkGray.png",
@@ -296,37 +321,24 @@ namespace HarvardShuttle.Data
             for (int i = 0; i < len; i++)
             {
                 String uid = "Group-1-Item-"+(i + 1).ToString();
-                group1.Items.Add(new SampleDataItem(uid, locations[i], "", "Assets/LightGray.png", "No description", ITEM_CONTENT, group1));
+                string path = "StopImages/" + locations[i].Replace(" ", "").Replace("-",""). ToLower().ToString() + ".jpg";
+                group1.Items.Add(new DataItem(uid, locations[i], "", path, "", "", group1));
             }
             this.AllGroups.Add(group1);
 
-            var group2 = new SampleDataGroup("Group-2",
+            var group2 = new DataGroup("Group-2",
                     "Favorite Trips",
                     "Group Subtitle: 2",
-                    "Assets/LightGray.png",
+                    "Assets/LightGraySmall.png",
                     "Group Description: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus tempor scelerisque lorem in vehicula. Aliquam tincidunt, lacus ut sagittis tristique, turpis massa volutpat augue, eu rutrum ligula ante a ante");
             this.AllGroups.Add(group2);
-
-            var group3 = new SampleDataGroup("Group-3",
-                    "Schedule",
-                    "Group Subtitle: 3",
-                    "Assets/MediumGray.png",
-                    "Group Description: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus tempor scelerisque lorem in vehicula. Aliquam tincidunt, lacus ut sagittis tristique, turpis massa volutpat augue, eu rutrum ligula ante a ante");
-            group3.Items.Add(new SampleDataItem("Group-3-Item-1",
-                    "Item Title: 1",
-                    "Item Subtitle: 1",
-                    "Assets/MediumGray.png",
-                    "Item Description: Pellentesque porta, mauris quis interdum vehicula, urna sapien ultrices velit, nec venenatis dui odio in augue. Cras posuere, enim a cursus convallis, neque turpis malesuada erat, ut adipiscing neque tortor ac erat.",
-                    ITEM_CONTENT,
-                    group3));
-            this.AllGroups.Add(group3);
         }
 
         public static void UpdateFavorites(string xml)
         {
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(xml);
-            SampleDataGroup favsGroup = SampleDataSource.GetGroup("Group-2");
+            DataGroup favsGroup = DataSource.GetGroup("Group-2");
             favsGroup.Items.Clear();
 
             int i = 1;
@@ -335,8 +347,8 @@ namespace HarvardShuttle.Data
                 string origin = elem.GetAttribute("origin");
                 string dest = elem.GetAttribute("dest");
 
-                SampleDataItem item = new SampleDataItem("Group-2-Item-"+i.ToString(), origin, dest, "", "from "+origin+" to "+dest, "", favsGroup);
-                SampleDataSource.GetGroup("Group-2").Items.Add(item);
+                DataItem item = new DataItem("Group-2-Item-"+i.ToString(), origin, dest, "", "from "+origin+" to "+dest, "", favsGroup);
+                DataSource.GetGroup("Group-2").Items.Add(item);
 
                 i++;
             }

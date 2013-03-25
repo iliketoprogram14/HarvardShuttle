@@ -15,6 +15,7 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
 // The Item Detail Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234232
+// NEED TO EITHER POPULATE OR IGNORE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 namespace HarvardShuttle
 {
@@ -47,7 +48,7 @@ namespace HarvardShuttle
             }
 
             // TODO: Create an appropriate data model for your problem domain to replace the sample data
-            var item = SampleDataSource.GetItem((String)navigationParameter);
+            var item = DataSource.GetItem((String)navigationParameter);
             this.DefaultViewModel["Group"] = item.Group;
             this.DefaultViewModel["Items"] = item.Group.Items;
             this.flipView.SelectedItem = item;
@@ -61,7 +62,7 @@ namespace HarvardShuttle
         /// <param name="pageState">An empty dictionary to be populated with serializable state.</param>
         protected override void SaveState(Dictionary<String, Object> pageState)
         {
-            var selectedItem = (SampleDataItem)this.flipView.SelectedItem;
+            var selectedItem = (DataItem)this.flipView.SelectedItem;
             pageState["SelectedItem"] = selectedItem.UniqueId;
         }
     }
