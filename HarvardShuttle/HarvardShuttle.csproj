@@ -141,6 +141,10 @@
     </AppxManifest>
     <None Include="Common\ReadMe.txt" />
     <None Include="HarvardShuttle_TemporaryKey.pfx" />
+    <None Include="Properties\DataSources\HarvardShuttle.Data.DataCommon.datasource" />
+    <None Include="Properties\DataSources\HarvardShuttle.Data.DataGroup.datasource" />
+    <None Include="Properties\DataSources\HarvardShuttle.Data.DataItem.datasource" />
+    <None Include="Properties\DataSources\HarvardShuttle.Data.DataSource.datasource" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\alvin_and_the_chipmunks_chipwrecked_image-310x150.jpg" />
@@ -202,9 +206,7 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\DataSources\" />
-  </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '11.0' ">
     <VisualStudioVersion>11.0</VisualStudioVersion>
   </PropertyGroup>

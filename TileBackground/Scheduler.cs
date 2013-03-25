@@ -85,7 +85,6 @@ namespace TileBackground
                 using (Stream responseStream = await response.Content.ReadAsStreamAsync())
                 using (XmlReader reader = XmlReader.Create(responseStream))
                 {
-                    bool shouldExit = false;
                     while (reader.Read())
                     {
                         if (reader.NodeType == XmlNodeType.Element && reader.Name == "departs")
