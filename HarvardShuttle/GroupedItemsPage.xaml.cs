@@ -17,6 +17,9 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using System.Collections.ObjectModel;
+using Windows.UI.Popups;
+using Windows.UI.ApplicationSettings;
+using Windows.UI.Core;
 
 // The Grouped Items Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234231
 
@@ -59,6 +62,7 @@ namespace HarvardShuttle
             this.DefaultViewModel["Groups"] = myDataSource.AllGroups;
             this.itemGridView.SelectionChanged += itemGridView_SelectionChanged;
             this.itemGridView.SelectedIndex = -1;
+            this.pageTitle.Text = "Harvard Shuttle";
             //if (asyncStatus == BackgroundAccessStatus.Unspecified)
             //    asyncStatus = await BackgroundExecutionManager.RequestAccessAsync();
         }
@@ -112,10 +116,12 @@ namespace HarvardShuttle
  
             if (item == null || item.Group.Title != "Favorite Trips") {
                 this.itemGridView.SelectedIndex = -1;
+                DeleteFavButton.Visibility = Visibility.Collapsed;
                 bottomAppBar.IsOpen = false;
                 return;
             }
 
+            DeleteFavButton.Visibility = Visibility.Visible;
             bottomAppBar.IsOpen = true;
         }
 
@@ -147,5 +153,12 @@ namespace HarvardShuttle
             else
                 this.bottomAppBar.IsOpen = true;
         }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.bottomAppBar.IsOpen = false;
+            SettingsPane.Show();
+        }
+
     }
 }

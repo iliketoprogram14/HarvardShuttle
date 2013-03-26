@@ -2,7 +2,7 @@
 <Package xmlns="http://schemas.microsoft.com/appx/2010/manifest">
   <Identity Name="22022b6f-f1d2-40a7-a7d7-b880007e6b69" Publisher="CN=LocalAdmin" Version="1.0.0.0" />
   <Properties>
-    <DisplayName>HarvardShuttle</DisplayName>
+    <DisplayName>Harvard Shuttle</DisplayName>
     <PublisherDisplayName>Randy Miller</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -15,7 +15,7 @@
   </Resources>
   <Applications>
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="HarvardShuttle.App">
-      <VisualElements DisplayName="Harvard Shuttle" Logo="Assets\bus-white-150.png" SmallLogo="Assets\bus30.png" Description="HarvardShuttle" ForegroundText="light" BackgroundColor="#8c1717" ToastCapable="false">
+      <VisualElements DisplayName="Harvard Shuttle" Logo="Assets\bus-white-150.png" SmallLogo="Assets\bus30.png" Description="Harvard Shuttle" ForegroundText="light" BackgroundColor="#8c1717" ToastCapable="false">
         <LockScreen Notification="badgeAndTileText" BadgeLogo="Assets\bus24.png" />
         <DefaultTile ShowName="logoOnly" ShortName="Harvard Shuttle" WideLogo="Assets\wide-logo-white.png" />
         <SplashScreen Image="Assets\Splash-Screen-HarvardShuttle.png" BackgroundColor="#8C1717" />

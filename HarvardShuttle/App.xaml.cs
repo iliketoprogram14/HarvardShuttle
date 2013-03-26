@@ -15,6 +15,10 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using Windows.UI.ApplicationSettings;
+using Windows.UI.Popups;
+using Windows.UI.Xaml.Media.Animation;
+using Windows.UI.Core;
 
 // The Grid App template is documented at http://go.microsoft.com/fwlink/?LinkId=234226
 
@@ -86,6 +90,12 @@ namespace HarvardShuttle
             Window.Current.Activate();
         }
 
+        protected override void OnWindowCreated(WindowCreatedEventArgs args)
+        {
+            base.OnWindowCreated(args);
+            SettingsPane.GetForCurrentView().CommandsRequested += onCommandsRequested;
+        }
+
         /// <summary>
         /// Invoked when application execution is being suspended.  Application state is saved
         /// without knowing whether the application will be terminated or resumed with the contents
@@ -98,6 +108,47 @@ namespace HarvardShuttle
             var deferral = e.SuspendingOperation.GetDeferral();
             await SuspensionManager.SaveAsync();
             deferral.Complete();
+        }
+
+        private Rect _window;
+        private Popup _popUp;
+        private const double WIDTH = 346;
+
+        private void OnWindowSizeChanged(object sender, WindowSizeChangedEventArgs e)
+        {
+            _window = Window.Current.Bounds;
+        }
+
+        private void onCommandsRequested(SettingsPane sender, SettingsPaneCommandsRequestedEventArgs args)
+        {
+            args.Request.ApplicationCommands.Add(new SettingsCommand("help", "Help", Handler));
+        }
+
+        private void Handler(IUICommand command)
+        {
+            _popUp = new Popup {
+                Width = WIDTH,
+                Height = Window.Current.Bounds.Height,
+                IsLightDismissEnabled = false,
+                IsOpen = true
+            };
+            _popUp.Closed += OnPopupClosed;
+            Window.Current.Activated += OnWindowActivated;
+            _popUp.Child = new SettingsFlyout { Width = WIDTH, Height = Window.Current.Bounds.Height };
+            _popUp.SetValue(Canvas.LeftProperty, SettingsPane.Edge == SettingsEdgeLocation.Right ? (Window.Current.Bounds.Width - WIDTH) : 0);
+            _popUp.SetValue(Canvas.TopProperty, 0);
+        }
+
+        private void OnWindowActivated(object sender, WindowActivatedEventArgs e)
+        {
+            if (e.WindowActivationState == CoreWindowActivationState.Deactivated)
+                _popUp.IsOpen = false;
+        }
+
+        private void OnPopupClosed(object sender, object e)
+        {
+            Window.Current.Activated -= OnWindowActivated;
+            _popUp.IsOpen = true;
         }
     }
 }

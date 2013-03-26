@@ -43,7 +43,7 @@
 
         <TextBlock x:Name="numMinutesTextBlock" Margin="0,0,15,20" TextWrapping="Wrap" Text="0" FontSize="200" IsTapEnabled="False" IsRightTapEnabled="False" IsHoldingEnabled="False" IsHitTestVisible="False" IsDoubleTapEnabled="False" TextAlignment="Right" Width="390" VerticalAlignment="Bottom" Padding="0" HorizontalAlignment="Right" Grid.Row="1"/>
         <TextBlock x:Name="minutesTextBlock" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" Margin="0,0,0,70" TextWrapping="Wrap" Text="minutes" VerticalAlignment="Bottom" FontSize="20"/>
-        <ListView  x:Name="ResultsList" Grid.Row="1" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0" IsDoubleTapEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Auto" Grid.Column="2" Grid.ColumnSpan="2"/>
+        <ListView  x:Name="ResultsList" Grid.Row="1" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0" IsDoubleTapEnabled="False" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" Grid.Column="2" Grid.ColumnSpan="2"/>
         <TextBlock x:Name="originTextBlock" Grid.Row="2"  HorizontalAlignment="Right" Margin="0,20,15,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" FontSize="50" TextAlignment="Right"/>
         <TextBlock x:Name="destTextBlock" Grid.Row="2" HorizontalAlignment="Right" Margin="0,134,15,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" FontSize="50"/>
         <TextBlock x:Name="toTextBlock" Grid.Row="2" HorizontalAlignment="Right" Margin="0,95,15,0" TextWrapping="Wrap" Text="to" VerticalAlignment="Top" FontSize="20"/>
