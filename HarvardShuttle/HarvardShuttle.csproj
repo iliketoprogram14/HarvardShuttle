@@ -145,11 +145,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\bus-white-150.png" />
+    <Content Include="Assets\bus24white.png" />
     <Content Include="Assets\bus30.png" />
     <Content Include="Assets\Splash-Screen-HarvardShuttle.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\wide-logo-white.png" />
-    <Content Include="Assets\bus24.png" />
     <Content Include="StopImages\20gardenst.jpg" />
     <Content Include="StopImages\boylstongate.jpg" />
     <Content Include="StopImages\harvardsquare.jpg" />

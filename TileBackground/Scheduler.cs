@@ -14,6 +14,7 @@ using System.Net;
 using System.Xml;
 using Windows.UI.Xaml.Controls;
 using Windows.Storage;
+using Windows.Networking.Connectivity;
 
 
 namespace TileBackground
@@ -78,6 +79,12 @@ namespace TileBackground
             int numNotifications = 0;
             int numListings = 0;
 
+            if (!IsThereInternet()) {
+                resultsList.Items.Add("No internet connection available.");
+                resultsList.Items.Add("Please check your network connection and retry finding a trip.");
+                return;
+            }
+
             var client = new System.Net.Http.HttpClient();
             HttpResponseMessage response = client.GetAsync(url).Result;
             using (Stream responseStream = await response.Content.ReadAsStreamAsync())
@@ -113,6 +120,13 @@ namespace TileBackground
             if (resultsList.Items.Count == 0) {
                 resultsList.Items.Add("No further times scheduled.");
             }
+        }
+
+        private static bool IsThereInternet()
+        {
+            ConnectionProfile connections = NetworkInformation.GetInternetConnectionProfile();
+            bool internet = connections != null && connections.GetNetworkConnectivityLevel() == NetworkConnectivityLevel.InternetAccess;
+            return internet;
         }
 
         private static int GetMinuteCountdown(string nodeValue)

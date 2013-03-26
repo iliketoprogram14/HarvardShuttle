@@ -16,7 +16,7 @@
   <Applications>
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="HarvardShuttle.App">
       <VisualElements DisplayName="Harvard Shuttle" Logo="Assets\bus-white-150.png" SmallLogo="Assets\bus30.png" Description="Harvard Shuttle" ForegroundText="light" BackgroundColor="#8c1717" ToastCapable="false">
-        <LockScreen Notification="badgeAndTileText" BadgeLogo="Assets\bus24.png" />
+        <LockScreen Notification="badgeAndTileText" BadgeLogo="Assets/bus24white.png" />
         <DefaultTile ShowName="logoOnly" ShortName="Harvard Shuttle" WideLogo="Assets\wide-logo-white.png" />
         <SplashScreen Image="Assets\Splash-Screen-HarvardShuttle.png" BackgroundColor="#8C1717" />
       </VisualElements>
