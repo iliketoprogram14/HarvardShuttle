@@ -30,8 +30,7 @@ namespace HarvardShuttle
         public static string favoritesStore = "favorites.xml";
         public static StorageFolder localFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
         private DataSource myDataSource;
-        private bool hasLoaded;
-        private DataItem lastSelectedItem;
+        public static BackgroundAccessStatus asyncStatus = BackgroundAccessStatus.Unspecified;
 
         public GroupedItemsPage()
         {
@@ -49,8 +48,6 @@ namespace HarvardShuttle
         /// session.  This will be null the first time a page is visited.</param>
         protected override async void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
         {
-            lastSelectedItem = null;
-
             // Update the store
             await InitFavoritesStore();
             StorageFile file = await localFolder.GetFileAsync(favoritesStore);
@@ -62,7 +59,8 @@ namespace HarvardShuttle
             this.DefaultViewModel["Groups"] = myDataSource.AllGroups;
             this.itemGridView.SelectionChanged += itemGridView_SelectionChanged;
             this.itemGridView.SelectedIndex = -1;
-            var result = await BackgroundExecutionManager.RequestAccessAsync();
+            if (asyncStatus == BackgroundAccessStatus.Unspecified)
+                asyncStatus = await BackgroundExecutionManager.RequestAccessAsync();
         }
 
         private async Task InitFavoritesStore()

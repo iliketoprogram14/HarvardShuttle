@@ -90,6 +90,12 @@
             ItemClick="ItemView_ItemClick" 
             RightTapped="itemGridView_RightTapped_1"
             IsSynchronizedWithCurrentItem="False">
+            
+            <GridView.ItemContainerStyle>
+                <Style TargetType="GridViewItem">
+                    
+                </Style>
+            </GridView.ItemContainerStyle>
 
             <GridView.ItemsPanel>
                 <ItemsPanelTemplate>                        

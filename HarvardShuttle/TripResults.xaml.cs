@@ -66,11 +66,12 @@ namespace HarvardShuttle
             Scheduler.CreateSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
             UpdateOriginDest(currOrigin, currDest);
 
-            // Update style of favorite button
-            //UpdateFavButton(currOrigin, currDest);
+            this.pageTitle.Text = "Trip Results";
 
             // Register the background task
-            RegisterBackgroundTask();
+            if (GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Denied && 
+                GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Unspecified)
+                RegisterBackgroundTask();
         }
 
         /// <summary>

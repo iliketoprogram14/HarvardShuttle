@@ -143,20 +143,30 @@ namespace TileBackground
         private static int AddTileNotifications(int nextMinuteCountdown, int numNotifications, string origin, string dest, TileUpdater updater)
         {
             XmlDocument tileXml = TileUpdateManager.GetTemplateContent(TileTemplateType.TileSquareText02);
+            XmlDocument wTileXml = TileUpdateManager.GetTemplateContent(TileTemplateType.TileWideBlockAndText01);
+            var node = tileXml.ImportNode(wTileXml.GetElementsByTagName("binding").Item(0), true);
+            tileXml.GetElementsByTagName("visual").Item(0).AppendChild(node);
 
             // set the branding to none
             XmlElement bindElem = (XmlElement)tileXml.GetElementsByTagName("binding").Item(0);
-            bindElem.SetAttribute("branding", "None");
+            bindElem.SetAttribute("branding", "Name");
+            bindElem = (XmlElement)tileXml.GetElementsByTagName("binding").Item(1);
+            bindElem.SetAttribute("branding", "Name");
 
-            // set text
-            XmlNodeList tileTextAttributes = tileXml.GetElementsByTagName("text");
+            // Set text
+            XmlNodeList tileTextAttributes = tileXml.GetElementsByTagName("binding").Item(0).ChildNodes;
+            XmlNodeList wTileTextAttributes = tileXml.GetElementsByTagName("binding").Item(1).ChildNodes;
             tileTextAttributes[1].InnerText = origin + " to " + dest;
+            wTileTextAttributes[0].InnerText = origin + " to ";
+            wTileTextAttributes[1].InnerText = dest;
 
             // set current live tile
             DateTime now = DateTime.Now;
             if (numNotifications == 0)
             {
-                tileTextAttributes[0].InnerText = GenTileString(nextMinuteCountdown);
+                string tileStr = GenTileString(nextMinuteCountdown);
+                tileTextAttributes[0].InnerText = tileStr;
+                SetWideTileAttr(wTileTextAttributes, tileStr);
                 var tileNotification = new TileNotification(tileXml);
                 tileNotification.ExpirationTime = DateTimeOffset.UtcNow.AddMinutes(1.0);
                 tileNotification.Tag = "0";
@@ -170,7 +180,9 @@ namespace TileBackground
             double i = (double)numNotifications;
             while (nextMinuteCountdown >= 0 && i <= maxNotifications)
             {
-                tileTextAttributes[0].InnerText = GenTileString(nextMinuteCountdown);
+                string tileStr = GenTileString(nextMinuteCountdown);
+                tileTextAttributes[0].InnerText = tileStr;
+                SetWideTileAttr(wTileTextAttributes, tileStr);
                 var tileNotification = new ScheduledTileNotification(tileXml, now.AddMinutes(i));
                 tileNotification.ExpirationTime = now.AddMinutes(1.0 + i); //DateTime.UtcNow.AddMinutes(1.0 + i);
                 tileNotification.Tag = i.ToString();
@@ -180,6 +192,19 @@ namespace TileBackground
             }
 
             return (int)i;
+        }
+
+        private static void SetWideTileAttr(XmlNodeList tileAttr, string tileStr)
+        {
+            if (tileStr.Contains(" min")) {
+                tileAttr[4].InnerText = tileStr.Replace(" min", "");
+                tileAttr[5].InnerText = "minutes";
+            }
+            else {
+                string hoursNoRemainder = tileStr.Replace(" hrs", "").Split('.')[0];
+                tileAttr[4].InnerText = hoursNoRemainder;
+                tileAttr[5].InnerText = (hoursNoRemainder == "1") ? "hour" : "hours";
+            }
         }
 
         private static void SetCountdownBox(TextBlock numMinutesBox, TextBlock unitsBox, int minutes)

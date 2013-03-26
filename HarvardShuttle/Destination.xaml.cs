@@ -59,6 +59,8 @@ namespace HarvardShuttle
             this.DefaultViewModel["Groups"] = toGroup;
             this.DefaultViewModel["Group"] = destGroup;
             this.DefaultViewModel["Items"] = destGroup.Items;
+
+            this.pageTitle.Text = "From " + origin;
         }
 
         void ItemView_ItemClick(object sender, ItemClickEventArgs e)
