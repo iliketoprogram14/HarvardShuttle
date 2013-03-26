@@ -1828,7 +1828,13 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!-- Custom brushes -->
+    <SolidColorBrush x:Key="BlockBackgroundBrush" Color="#FF557EB9"/>
+    <SolidColorBrush x:Key="ListViewItemOverlayBackgroundThemeBlackBrush" Color="#BF000000" />
     <SolidColorBrush x:Key="CrimsonBackgroundBrush" Color="#FF8C1717"/>
+
+    <!-- Custom layout -->
     <Style x:Key="CrimsonLayoutStyle" TargetType="Panel">
         <Setter Property="Background" Value="{StaticResource CrimsonBackgroundBrush}"/>
         <Setter Property="ChildrenTransitions">
@@ -1839,4 +1845,39 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+
+    <!-- Custom Item templates -->
+    <DataTemplate x:Key="MainItemTemplate">
+        <Grid HorizontalAlignment="Left" Width="250" Height="150" Margin="10,10,10,10">
+            <Border>
+                <Image Source="{Binding Image}" Stretch="UniformToFill" AutomationProperties.Name="{Binding Title}" Margin="0,0,0,0"/>
+            </Border>
+            <StackPanel VerticalAlignment="Bottom" Background="{StaticResource ListViewItemOverlayBackgroundThemeBlackBrush}">
+                <TextBlock Text="{Binding Title}" Foreground="{StaticResource ListViewItemOverlayForegroundThemeBrush}" Style="{StaticResource TitleTextStyle}" Height="30" Margin="15,0,0,0"/>
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+
+    <DataTemplate x:Key="FavoriteItemTemplate">
+        <Grid HorizontalAlignment="Left" Width="300" Height="150" Margin="10,10,10,10"
+                  IsRightTapEnabled="True" RightTapped="itemGridView_RightTapped_1">
+            <Border Margin="0,0,50,0">
+                <Image Source="{Binding Image}" Stretch="UniformToFill" AutomationProperties.Name="{Binding Title}" Margin="0,0,0,0" Width="250"/>
+            </Border>
+            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Background="Black" Margin="149,0,0,0" Width="2" Height="150">
+                <TextBlock Text=""/>
+            </StackPanel>
+            <Border Margin="151,0,0,0">
+                <Image Source="{Binding Image2}" Stretch="UniformToFill" AutomationProperties.Name="{Binding Title}"/>
+            </Border>
+            <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Background="{StaticResource ListViewItemOverlayBackgroundThemeBlackBrush}">
+                <TextBlock VerticalAlignment="Bottom" Text="{Binding Title}" Foreground="{StaticResource ListViewItemOverlayForegroundThemeBrush}" Width="135" Height="30" Style="{StaticResource BodyTextStyle}" Margin="15,0,0,0"/>
+            </StackPanel>
+            <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Right" Background="{StaticResource ListViewItemOverlayBackgroundThemeBlackBrush}">
+                <TextBlock VerticalAlignment="Bottom" Text="{Binding Subtitle}" Foreground="{StaticResource ListViewItemOverlayForegroundThemeBrush}" Width="135"  Height="30" Style="{StaticResource BodyTextStyle}" Margin="15,0,0,0"/>
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+
 </ResourceDictionary>

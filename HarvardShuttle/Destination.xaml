@@ -19,21 +19,6 @@
             IsSourceGrouped="true"
             ItemsPath="TopItems"/>
 
-        <!-- Custom brushes -->
-        <SolidColorBrush x:Key="ListViewItemOverlayBackgroundThemeBlackBrush" Color="#BF000000" />
-
-        <!-- Item template -->
-        <DataTemplate x:Key="MainItemTemplate">
-            <Grid HorizontalAlignment="Left" Width="250" Height="150" Margin="10,10,10,10">
-                <Border>
-                    <Image Source="{Binding Image}" Stretch="UniformToFill" AutomationProperties.Name="{Binding Title}" Margin="0,0,0,0"/>
-                </Border>
-                <StackPanel VerticalAlignment="Bottom" Background="{StaticResource ListViewItemOverlayBackgroundThemeBlackBrush}">
-                    <TextBlock Text="{Binding Title}" Foreground="{StaticResource ListViewItemOverlayForegroundThemeBrush}" Style="{StaticResource TitleTextStyle}" Height="30" Margin="15,0,0,0"/>
-                </StackPanel>
-            </Grid>
-        </DataTemplate>
-
     </Page.Resources>
 
     <!--
