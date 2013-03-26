@@ -52,14 +52,11 @@ namespace HarvardShuttle
                 if (!origin.Equals(item)) 
                     destGroup.Items.Add(item);
             }
-
             toGroup.Add(destGroup);
 
             // Update the view
             this.DefaultViewModel["Groups"] = toGroup;
-            this.DefaultViewModel["Group"] = destGroup;
-            this.DefaultViewModel["Items"] = destGroup.Items;
-
+            
             this.pageTitle.Text = "From " + origin;
         }
 
