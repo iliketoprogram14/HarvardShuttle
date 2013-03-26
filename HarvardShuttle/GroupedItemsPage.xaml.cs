@@ -98,8 +98,7 @@ namespace HarvardShuttle
             var item = (DataItem)e.ClickedItem;
             if (item.Group.UniqueId.Equals("Group-1"))
                 this.Frame.Navigate(typeof(Destination), item);
-            else
-            {
+            else {
                 string origin = item.Title;
                 string dest = item.Subtitle;
                 this.Frame.Navigate(typeof(TripResults), Tuple.Create(origin, dest));

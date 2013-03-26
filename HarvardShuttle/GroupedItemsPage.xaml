@@ -89,7 +89,7 @@
             IsItemClickEnabled="True"
             ItemClick="ItemView_ItemClick" 
             RightTapped="itemGridView_RightTapped_1"
-            IsSynchronizedWithCurrentItem="False">
+            IsSynchronizedWithCurrentItem="False" CacheMode="BitmapCache" IncrementalLoadingTrigger="Edge">
             
             <GridView.ItemContainerStyle>
                 <Style TargetType="GridViewItem">
