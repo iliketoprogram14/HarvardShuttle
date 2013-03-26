@@ -148,6 +148,5 @@ namespace HarvardShuttle
             else
                 this.bottomAppBar.IsOpen = true;
         }
-
     }
 }

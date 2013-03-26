@@ -142,6 +142,11 @@ namespace HarvardShuttle.Data
                 return false;
             return _uniqueId == d._uniqueId && _title == d._title && _subtitle == d._subtitle;
         }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
     }
 
     /// <summary>

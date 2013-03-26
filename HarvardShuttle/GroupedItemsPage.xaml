@@ -135,9 +135,11 @@
             ItemsSource="{Binding Source={StaticResource groupedItemsViewSource}}"
             ItemTemplateSelector="{StaticResource MainSelector}"
             SelectionMode="None"
+            IsRightTapEnabled="True"
             IsSwipeEnabled="false"
             IsItemClickEnabled="True"
             ItemClick="ItemView_ItemClick"
+            RightTapped="itemGridView_RightTapped_1"
             Grid.ColumnSpan="2" Grid.RowSpan="2">
 
             <ListView.GroupStyle>
@@ -215,7 +217,7 @@
         </VisualStateManager.VisualStateGroups>
     </Grid>
     <Page.BottomAppBar>
-        <AppBar x:Name="bottomAppBar" AutomationProperties.Name="My Bottom App Bar" IsRightTapEnabled="True" IsSticky="True">
+        <AppBar x:Name="bottomAppBar" AutomationProperties.Name="My Bottom App Bar" IsSticky="True" IsRightTapEnabled="True">
             <Grid>
                 <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
                     <Button Name="DeleteFavButton" Style="{StaticResource DiscardAppBarButtonStyle}" Tag="DeleteButton" Click="DeleteFavButton_Click" />
