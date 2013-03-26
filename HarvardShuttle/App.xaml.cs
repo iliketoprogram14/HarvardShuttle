@@ -29,6 +29,9 @@ namespace HarvardShuttle
     /// </summary>
     sealed partial class App : Application
     {
+        private Popup _popUp;
+        private const double WIDTH = 346;
+
         /// <summary>
         /// Initializes the singleton Application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -110,15 +113,6 @@ namespace HarvardShuttle
             deferral.Complete();
         }
 
-        private Rect _window;
-        private Popup _popUp;
-        private const double WIDTH = 346;
-
-        private void OnWindowSizeChanged(object sender, WindowSizeChangedEventArgs e)
-        {
-            _window = Window.Current.Bounds;
-        }
-
         private void onCommandsRequested(SettingsPane sender, SettingsPaneCommandsRequestedEventArgs args)
         {
             args.Request.ApplicationCommands.Add(new SettingsCommand("help", "Help", Handler));
@@ -129,10 +123,11 @@ namespace HarvardShuttle
             _popUp = new Popup {
                 Width = WIDTH,
                 Height = Window.Current.Bounds.Height,
-                IsLightDismissEnabled = false,
+                IsLightDismissEnabled = true,
                 IsOpen = true
             };
             _popUp.Closed += OnPopupClosed;
+
             Window.Current.Activated += OnWindowActivated;
             _popUp.Child = new SettingsFlyout { Width = WIDTH, Height = Window.Current.Bounds.Height };
             _popUp.SetValue(Canvas.LeftProperty, SettingsPane.Edge == SettingsEdgeLocation.Right ? (Window.Current.Bounds.Width - WIDTH) : 0);
@@ -148,7 +143,6 @@ namespace HarvardShuttle
         private void OnPopupClosed(object sender, object e)
         {
             Window.Current.Activated -= OnWindowActivated;
-            _popUp.IsOpen = true;
         }
     }
 }
