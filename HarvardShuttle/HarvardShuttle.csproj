@@ -113,14 +113,8 @@
     <Compile Include="GroupedItemsPage.xaml.cs">
       <DependentUpon>GroupedItemsPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="GroupDetailPage.xaml.cs">
-      <DependentUpon>GroupDetailPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Destination.xaml.cs">
       <DependentUpon>Destination.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="ItemDetailPage.xaml.cs">
-      <DependentUpon>ItemDetailPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainItemTemplateSelector.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -154,6 +148,7 @@
     <Content Include="Assets\shuttle24.png" />
     <Content Include="Assets\shuttle30.png" />
     <Content Include="Assets\SmallLogo.png" />
+    <Content Include="Assets\Splash-Screen-HarvardShuttle.png" />
     <Content Include="Assets\SplashScreen.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\LightGray.png" />
@@ -189,17 +184,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="GroupDetailPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="Destination.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="ItemDetailPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="TripResults.xaml">
       <SubType>Designer</SubType>

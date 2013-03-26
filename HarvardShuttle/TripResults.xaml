@@ -11,9 +11,6 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-
-        <!-- TODO: Delete this line if the key AppName is declared in App.xaml -->
-        <x:String x:Key="AppName">My Application</x:String>
     </Page.Resources>
 
     <!--
@@ -21,7 +18,7 @@
         * Row 0 contains the back button and page title
         * Row 1 contains the rest of the page layout
     -->
-    <Grid Style="{StaticResource LayoutRootStyle}">
+    <Grid Style="{StaticResource CrimsonLayoutStyle}">
         <Grid.RowDefinitions>
             <RowDefinition Height="140"/>
             <RowDefinition Height="*"/>
@@ -44,7 +41,7 @@
             <TextBlock x:Name="pageTitle" Grid.Column="1" Text="{StaticResource AppName}" Style="{StaticResource PageHeaderTextStyle}"/>
         </Grid>
 
-        <TextBlock x:Name="numMinutesTextBlock" Grid.Row="1" Margin="0,0,15,20" TextWrapping="Wrap" Text="25" FontSize="200" IsTapEnabled="False" IsRightTapEnabled="False" IsHoldingEnabled="False" IsHitTestVisible="False" IsDoubleTapEnabled="False" TextAlignment="Right" Width="342" VerticalAlignment="Bottom" Padding="0" HorizontalAlignment="Right"/>
+        <TextBlock x:Name="numMinutesTextBlock" Margin="0,0,15,20" TextWrapping="Wrap" Text="0" FontSize="200" IsTapEnabled="False" IsRightTapEnabled="False" IsHoldingEnabled="False" IsHitTestVisible="False" IsDoubleTapEnabled="False" TextAlignment="Right" Width="390" VerticalAlignment="Bottom" Padding="0" HorizontalAlignment="Right" Grid.Row="1"/>
         <TextBlock x:Name="minutesTextBlock" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" Margin="0,0,0,70" TextWrapping="Wrap" Text="minutes" VerticalAlignment="Bottom" FontSize="20"/>
         <ListView  x:Name="ResultsList" Grid.Row="1" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,50,10,0" IsDoubleTapEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Auto" Grid.Column="2" Grid.ColumnSpan="2"/>
         <TextBlock x:Name="originTextBlock" Grid.Row="2"  HorizontalAlignment="Right" Margin="0,20,15,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" FontSize="50" TextAlignment="Right"/>

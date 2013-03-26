@@ -31,6 +31,7 @@ namespace HarvardShuttle
         public static StorageFolder localFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
         private DataSource myDataSource;
         private bool hasLoaded;
+        private DataItem lastSelectedItem;
 
         public GroupedItemsPage()
         {
@@ -48,7 +49,8 @@ namespace HarvardShuttle
         /// session.  This will be null the first time a page is visited.</param>
         protected override async void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
         {
-            hasLoaded = false;
+            lastSelectedItem = null;
+
             // Update the store
             await InitFavoritesStore();
             StorageFile file = await localFolder.GetFileAsync(favoritesStore);
@@ -58,12 +60,9 @@ namespace HarvardShuttle
 
             // Load the view
             this.DefaultViewModel["Groups"] = myDataSource.AllGroups;
-            var result = await BackgroundExecutionManager.RequestAccessAsync();
-
             this.itemGridView.SelectionChanged += itemGridView_SelectionChanged;
             this.itemGridView.SelectedIndex = -1;
-
-            hasLoaded = true;
+            var result = await BackgroundExecutionManager.RequestAccessAsync();
         }
 
         private async Task InitFavoritesStore()
@@ -94,7 +93,7 @@ namespace HarvardShuttle
         /// <param name="sender">The GridView (or ListView when the application is snapped)
         /// displaying the item clicked.</param>
         /// <param name="e">Event data that describes the item clicked.</param>
-        void ItemView_ItemClick(object sender, ItemClickEventArgs e)
+        private void ItemView_ItemClick(object sender, ItemClickEventArgs e)
         {
             // Navigate to the appropriate destination page, configuring the new page
             // by passing required information as a navigation parameter
@@ -112,17 +111,18 @@ namespace HarvardShuttle
 
         private void itemGridView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!hasLoaded)
-                return;
             var item = (DataItem)this.itemGridView.SelectedItem;
-
-            if (item == null || item.Group.Title != "Favorite Trips")
+ 
+            if (item == null || item.Group.Title != "Favorite Trips") {
+                this.itemGridView.SelectedIndex = -1;
+                bottomAppBar.IsOpen = false;
                 return;
+            }
 
-            bottomAppBar.IsOpen = !bottomAppBar.IsOpen;
+            bottomAppBar.IsOpen = true;
         }
 
-        private async void MyFavoriteButton_Click(object sender, RoutedEventArgs e)
+        private async void DeleteFavButton_Click(object sender, RoutedEventArgs e)
         {
             bottomAppBar.IsOpen = false;
 
@@ -141,6 +141,14 @@ namespace HarvardShuttle
             string xml = await FileIO.ReadTextAsync(file);
             xml = xml.Replace(toRemove, "");
             await FileIO.WriteTextAsync(file, xml);
+        }
+
+        private void itemGridView_RightTapped_1(object sender, RightTappedRoutedEventArgs e)
+        {
+            if (this.itemGridView.SelectedItem != null)
+                this.bottomAppBar.IsOpen = false;
+            else
+                this.bottomAppBar.IsOpen = true;
         }
 
     }

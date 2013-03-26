@@ -49,14 +49,14 @@ namespace HarvardShuttle
 
             // Add all destinations that aren't the origin to the destination group
             foreach (DataItem item in originGroup.Items) {
-                if (!navigationParameter.Equals(item)) 
+                if (!origin.Equals(item)) 
                     destGroup.Items.Add(item);
             }
+
             toGroup.Add(destGroup);
 
             // Update the view
             this.DefaultViewModel["Groups"] = toGroup;
-            //this.DefaultViewModel["Group"] = originGroup;
             this.DefaultViewModel["Group"] = destGroup;
             this.DefaultViewModel["Items"] = destGroup.Items;
         }

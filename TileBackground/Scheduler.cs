@@ -24,9 +24,9 @@ namespace TileBackground
         private static int maxListings = 30;
         private static int maxNotifications = 15;
 
-        public static void CreateSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock box)
+        public static void CreateSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock numMinutes, TextBlock units)
         {
-            CallService(new_origin, new_dest, results, box);
+            CallService(new_origin, new_dest, results, numMinutes, units);
             results.Height = (results.Items.Count * 20 < height) ?
                 results.Items.Count * 20 : height;
             UpdateLastOriginDest(new_origin, new_dest);
@@ -42,7 +42,7 @@ namespace TileBackground
             string origin = doc.GetElementsByTagName("origin")[0].InnerText;
             string dest = doc.GetElementsByTagName("dest")[0].InnerText;
 
-            CallService(origin, dest, null, null);
+            CallService(origin, dest, null, null, null);
         }
 
         private async static void UpdateLastOriginDest(string new_origin, string new_dest)
@@ -65,7 +65,7 @@ namespace TileBackground
             await FileIO.WriteTextAsync(file, xml);
         }
 
-        private async static void CallService(string origin, string dest, ListView resultsList, TextBlock box)
+        private async static void CallService(string origin, string dest, ListView resultsList, TextBlock numMinutes, TextBlock units)
         {
             string url = "http://shuttleboy.cs50.net/api/1.2/trips?a=" + origin +
                 "&b=" + dest + "&output=xml";
@@ -78,43 +78,40 @@ namespace TileBackground
             int numNotifications = 0;
             int numListings = 0;
 
-            try
+            var client = new System.Net.Http.HttpClient();
+            HttpResponseMessage response = client.GetAsync(url).Result;
+            using (Stream responseStream = await response.Content.ReadAsStreamAsync())
+            using (XmlReader reader = XmlReader.Create(responseStream))
             {
-                var client = new System.Net.Http.HttpClient();
-                HttpResponseMessage response = client.GetAsync(url).Result;
-                using (Stream responseStream = await response.Content.ReadAsStreamAsync())
-                using (XmlReader reader = XmlReader.Create(responseStream))
+                while (reader.Read())
                 {
-                    while (reader.Read())
+                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "departs")
                     {
-                        if (reader.NodeType == XmlNodeType.Element && reader.Name == "departs")
+                        reader.Read();
+                        minuteCountdown = GetMinuteCountdown(reader.Value);
+
+                        // add listings to main UI
+                        if (resultsList != null)
                         {
-                            reader.Read();
-                            minuteCountdown = GetMinuteCountdown(reader.Value);
-
-                            // add listings to main UI
-                            if (resultsList != null)
-                            {
-                                if (numNotifications == 0)
-                                    box.Text = minuteCountdown.ToString();
-                                else
-                                    AddListing(minuteCountdown, resultsList);
-                                numListings++;
-                            }
-
-                            // add tile notifications
-                            if (numNotifications <= maxNotifications)
-                                numNotifications = AddTileNotifications(minuteCountdown, numNotifications, origin, dest, updater);
-
-                            if (numListings > maxListings)
-                                break;
+                            if (numNotifications == 0)
+                                SetCountdownBox(numMinutes, units, minuteCountdown);
+                            else
+                                AddListing(minuteCountdown, resultsList);
+                            numListings++;
                         }
+
+                        // add tile notifications
+                        if (numNotifications <= maxNotifications)
+                            numNotifications = AddTileNotifications(minuteCountdown, numNotifications, origin, dest, updater);
+
+                        if (numListings > maxListings)
+                            break;
                     }
                 }
             }
-            catch (Exception e)
-            {
-                int d = 0;
+
+            if (resultsList.Items.Count == 0) {
+                resultsList.Items.Add("No further times scheduled.");
             }
         }
 
@@ -183,6 +180,19 @@ namespace TileBackground
             }
 
             return (int)i;
+        }
+
+        private static void SetCountdownBox(TextBlock numMinutesBox, TextBlock unitsBox, int minutes)
+        {
+            if (minutes < 120) {
+                numMinutesBox.Text = minutes.ToString();
+                unitsBox.Text = "minutes";
+            }
+            else {
+                double hours = Math.Round((double)minutes / 60.0, 1);
+                numMinutesBox.Text = hours.ToString();
+                unitsBox.Text = "hours";
+            }
         }
 
         private static string GenTileString(int minutes)

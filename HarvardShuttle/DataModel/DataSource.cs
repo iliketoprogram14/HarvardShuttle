@@ -134,6 +134,14 @@ namespace HarvardShuttle.Data
         {
             return this.Title;
         }
+
+        public override bool Equals(object obj)
+        {
+            DataCommon d = obj as DataCommon;
+            if (d == null)
+                return false;
+            return _uniqueId == d._uniqueId && _title == d._title && _subtitle == d._subtitle;
+        }
     }
 
     /// <summary>

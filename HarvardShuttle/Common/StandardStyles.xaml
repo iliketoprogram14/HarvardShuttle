@@ -442,13 +442,13 @@
         <Setter Property="AutomationProperties.AutomationId" Value="DeleteAppBarButton"/>
         <Setter Property="AutomationProperties.Name" Value="Delete"/>
         <Setter Property="Content" Value="&#xE106;"/>
-    </Style>
+    </Style>-->
     <Style x:Key="DiscardAppBarButtonStyle" TargetType="ButtonBase" BasedOn="{StaticResource AppBarButtonStyle}">
         <Setter Property="AutomationProperties.AutomationId" Value="DiscardAppBarButton"/>
         <Setter Property="AutomationProperties.Name" Value="Discard"/>
         <Setter Property="Content" Value="&#xE107;"/>
     </Style>
-    <Style x:Key="RemoveAppBarButtonStyle" TargetType="ButtonBase" BasedOn="{StaticResource AppBarButtonStyle}">
+<!--    <Style x:Key="RemoveAppBarButtonStyle" TargetType="ButtonBase" BasedOn="{StaticResource AppBarButtonStyle}">
         <Setter Property="AutomationProperties.AutomationId" Value="RemoveAppBarButton"/>
         <Setter Property="AutomationProperties.Name" Value="Remove"/>
         <Setter Property="Content" Value="&#xE108;"/>
@@ -1820,6 +1820,17 @@
 
     <Style x:Key="LayoutRootStyle" TargetType="Panel">
         <Setter Property="Background" Value="{StaticResource ApplicationPageBackgroundThemeBrush}"/>
+        <Setter Property="ChildrenTransitions">
+            <Setter.Value>
+                <TransitionCollection>
+                    <EntranceThemeTransition/>
+                </TransitionCollection>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <SolidColorBrush x:Key="CrimsonBackgroundBrush" Color="#FF8C1717"/>
+    <Style x:Key="CrimsonLayoutStyle" TargetType="Panel">
+        <Setter Property="Background" Value="{StaticResource CrimsonBackgroundBrush}"/>
         <Setter Property="ChildrenTransitions">
             <Setter.Value>
                 <TransitionCollection>

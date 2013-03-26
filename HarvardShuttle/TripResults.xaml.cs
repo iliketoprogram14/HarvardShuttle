@@ -60,17 +60,14 @@ namespace HarvardShuttle
             currOrigin = items.Item1;
             currDest = items.Item2;
 
-            file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStore);
-            favoritesXmlCache = await FileIO.ReadTextAsync(file);
-
-            isFav = false;
+            UpdateFavoritesCache(currOrigin, currDest);
 
             // Update the schedule asynchronously
-            Scheduler.CreateSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock);
+            Scheduler.CreateSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
             UpdateOriginDest(currOrigin, currDest);
 
             // Update style of favorite button
-            UpdateFavButton(currOrigin, currDest);
+            //UpdateFavButton(currOrigin, currDest);
 
             // Register the background task
             RegisterBackgroundTask();
@@ -84,6 +81,17 @@ namespace HarvardShuttle
         /// <param name="pageState">An empty dictionary to be populated with serializable state.</param>
         protected override void SaveState(Dictionary<String, Object> pageState)
         {
+        }
+
+        private async void UpdateFavoritesCache(string origin, string dest)
+        {
+            file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStore);
+            favoritesXmlCache = await FileIO.ReadTextAsync(file);
+
+            isFav = false;
+
+            // Update style of favorite button
+            UpdateFavButton(origin, dest);
         }
 
         /// <summary>
