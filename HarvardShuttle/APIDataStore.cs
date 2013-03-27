@@ -93,8 +93,7 @@ namespace HarvardShuttle
 
             // Parse json string into an xml list of stops
             string xml = "<stops>";
-            JsonArray data = obj["data"].GetArray();
-            foreach (JsonValue stop in data) {
+            foreach (JsonValue stop in obj["data"].GetArray()) {
                 var stopObj = stop.GetObject();
 
                 // Get the title for the current transloc item
@@ -242,9 +241,63 @@ namespace HarvardShuttle
             return destGroup;
         }
 
-        public static void GetArrivalEstimates(string origin, string dest)
+        public async static Task<string> GetArrivalEstimates(string origin, string dest)
         {
+            // Grab the API data store
+            StorageFile file = await localFolder.GetFileAsync(dataStorePath);
+            string xml = await FileIO.ReadTextAsync(file);
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
 
+            // get ids of origin and dest
+            string origin_id = "";
+            string dest_id = "";
+            List<string> origin_routes = new List<string>();
+            List<string> dest_routes = new List<string>();
+            foreach (XmlElement elem in doc.GetElementsByTagName("stop")) {
+                string stopName = elem.GetElementsByTagName("title")[0].InnerText;
+                if (stopName == origin) {
+                    origin_id = elem.GetAttribute("s_id");
+                    origin_routes= elem.GetElementsByTagName("stop_routes")[0].InnerText.Split(',').ToList<string>();
+                    //foreach (string r in routes)
+                    //    origin_routes.Add(r);
+                }
+                else if (stopName == dest) {
+                    dest_id = elem.GetAttribute("s_id");
+                    dest_routes = elem.GetElementsByTagName("stop_routes")[0].InnerText.Split(',').ToList<string>();
+                    //foreach (string r in routes)
+                    //    dest_routes.Add(r);
+                }
+                if (origin_id != "" && dest_id != "")
+                    break;
+            }
+            IEnumerable<string> common_routes = origin_routes.Intersect<string>(dest_routes);
+            //List<string> s = new List<string>();
+            //s.Intersect<string>();
+
+            // Download stops and get json response
+            string url = "http://api.transloc.com/1.1/arrival-estimates.json?agencies=" + agency + "&stops=" + origin_id;
+            var client = new System.Net.Http.HttpClient();
+            HttpResponseMessage response = client.GetAsync(url).Result;
+            string responseString = await response.Content.ReadAsStringAsync();
+            JsonObject obj = JsonObject.Parse(responseString);
+
+            string arrivalStr = "";
+            JsonArray dataArr = obj["data"].GetArray();
+            if (dataArr.Count != 0) {
+                var arrivals = dataArr[0].GetObject()["arrivals"].GetArray();
+                foreach (JsonValue arrival in arrivals) {
+                    var arrival_obj = arrival.GetObject();
+                    string route_id = arrival_obj["route_id"].GetString();
+
+                    // we have an arrival
+                    if (common_routes.Contains(route_id)) {
+                        arrivalStr = arrival_obj["arrival_at"].GetString().Split('T')[1].Split('-')[0];
+                    }
+                }
+            }
+
+            return arrivalStr;
         }
 
         public static void GetRoutes(string origin, string dest)

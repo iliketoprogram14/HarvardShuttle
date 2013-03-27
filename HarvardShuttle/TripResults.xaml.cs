@@ -54,7 +54,7 @@ namespace HarvardShuttle
         /// </param>
         /// <param name="pageState">A dictionary of state preserved by this page during an earlier
         /// session.  This will be null the first time a page is visited.</param>
-        protected override void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
+        protected async override void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
         {
             Tuple<string, string> items = (Tuple<string, string>)navigationParameter;
             currOrigin = items.Item1;
@@ -72,6 +72,10 @@ namespace HarvardShuttle
             if (GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Denied && 
                 GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Unspecified)
                 RegisterBackgroundTask();
+
+            // Get arrival estimate
+            this.estimateBox.Text = await APIDataStore.GetArrivalEstimates(currOrigin, currDest);
+            this.estimateBox.Text = "| " + this.estimateBox.Text + " |";
         }
 
         /// <summary>

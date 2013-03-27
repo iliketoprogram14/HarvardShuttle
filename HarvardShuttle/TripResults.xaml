@@ -47,6 +47,7 @@
         <TextBlock x:Name="originTextBlock" Grid.Row="2"  HorizontalAlignment="Right" Margin="0,20,15,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" FontSize="50" TextAlignment="Right"/>
         <TextBlock x:Name="destTextBlock" Grid.Row="2" HorizontalAlignment="Right" Margin="0,134,15,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" FontSize="50"/>
         <TextBlock x:Name="toTextBlock" Grid.Row="2" HorizontalAlignment="Right" Margin="0,95,15,0" TextWrapping="Wrap" Text="to" VerticalAlignment="Top" FontSize="20"/>
+        <TextBlock x:Name="estimateBox" HorizontalAlignment="Left" Margin="418,10,0,0" Grid.Row="1" TextWrapping="Wrap" Text="THIS IS A TEXT BLOCK" VerticalAlignment="Top" FontSize="40" Grid.ColumnSpan="2"/>
 
         <VisualStateManager.VisualStateGroups>
 
