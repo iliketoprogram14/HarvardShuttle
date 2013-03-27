@@ -30,7 +30,7 @@ namespace HarvardShuttle
     /// </summary>
     public sealed partial class GroupedItemsPage : HarvardShuttle.Common.LayoutAwarePage
     {
-        public static string favoritesStore = "favorites.xml";
+        public static string favoritesStorePath = "favorites.xml";
         public static StorageFolder localFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
         private DataSource myDataSource;
         public static BackgroundAccessStatus asyncStatus = BackgroundAccessStatus.Unspecified;
@@ -53,7 +53,7 @@ namespace HarvardShuttle
         {
             // Update the store
             await InitFavoritesStore();
-            StorageFile file = await localFolder.GetFileAsync(favoritesStore);
+            StorageFile file = await localFolder.GetFileAsync(favoritesStorePath);
             string favoritesXml = await FileIO.ReadTextAsync(file);
             myDataSource = new DataSource();
             myDataSource.UpdateFavorites(favoritesXml);
@@ -66,13 +66,15 @@ namespace HarvardShuttle
 
             if (asyncStatus == BackgroundAccessStatus.Unspecified)
                 asyncStatus = await BackgroundExecutionManager.RequestAccessAsync();
+
+            APIDataStore.InitDataStore(DataSource.GetGroup("Group-1").Items.ToList());
         }
 
         private async Task InitFavoritesStore()
         {
             bool fileExists = true;
             try {
-                StorageFile file = await localFolder.GetFileAsync(favoritesStore);
+                StorageFile file = await localFolder.GetFileAsync(favoritesStorePath);
                 fileExists = true;
             }
             catch (Exception) {
@@ -83,9 +85,9 @@ namespace HarvardShuttle
                 string xmlHeader =
                     "<favorites>" + 
                     "<trip origin=\"Boylston Gate\" dest=\"Quad\"></trip>" +
-                    "<trip origin=\"Quad\" dest=\"Boylston Gate\"></trip>" +
+                    "<trip origin=\"Quad\" dest=\"Mass Ave Garden St\"></trip>" +
                     "</favorites>";
-                StorageFile file = await localFolder.CreateFileAsync(favoritesStore, CreationCollisionOption.ReplaceExisting);
+                StorageFile file = await localFolder.CreateFileAsync(favoritesStorePath, CreationCollisionOption.ReplaceExisting);
                 await FileIO.WriteTextAsync(file, xmlHeader);
             }
         }
@@ -140,7 +142,7 @@ namespace HarvardShuttle
             var idx = itemsa.IndexOf(item);
             itemsa.Remove(item);
 
-            StorageFile file = await localFolder.GetFileAsync(favoritesStore);
+            StorageFile file = await localFolder.GetFileAsync(favoritesStorePath);
             string toRemove = "<trip origin=\"" + origin + "\" dest=\"" + dest + "\"></trip>";
             string xml = await FileIO.ReadTextAsync(file);
             xml = xml.Replace(toRemove, "");

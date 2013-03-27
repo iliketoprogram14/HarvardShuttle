@@ -39,19 +39,21 @@ namespace HarvardShuttle
         /// </param>
         /// <param name="pageState">A dictionary of state preserved by this page during an earlier
         /// session.  This will be null the first time a page is visited.</param>
-        protected override void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
+        protected async override void LoadState(Object navigationParameter, Dictionary<String, Object> pageState)
         {
             // Create an origin group and a destination group
-            var originGroup = DataSource.GetGroup("Group-1");
-            DataGroup destGroup = new DataGroup("Dest-Group", "To", "", "Assets/DarkGray.png", "");
+            //var originGroup = DataSource.GetGroup("Group-1");
+            //DataGroup destGroup = new DataGroup("Dest-Group", "To", "", "Assets/DarkGray.png", "");
             ObservableCollection<DataGroup> toGroup = new ObservableCollection<DataGroup>();
             origin = (DataItem)navigationParameter;
 
             // Add all destinations that aren't the origin to the destination group
-            foreach (DataItem item in originGroup.Items) {
+            /*foreach (DataItem item in originGroup.Items) {
                 if (!origin.Equals(item)) 
                     destGroup.Items.Add(item);
-            }
+            }*/
+
+            DataGroup destGroup = await APIDataStore.GetDestinations(origin.Title);
             toGroup.Add(destGroup);
 
             // Update the view

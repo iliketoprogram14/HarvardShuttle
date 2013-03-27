@@ -328,7 +328,7 @@ namespace HarvardShuttle.Data
             locations.Add("Soldiers Field Park");
             locations.Add("Stadium");
             locations.Add("Winthrop House");
-            locations.Add("20 Garden St");
+            //locations.Add("20 Garden St");
         }
 
         public DataSource()

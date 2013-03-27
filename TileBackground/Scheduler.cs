@@ -70,8 +70,6 @@ namespace TileBackground
         {
             string url = "http://shuttleboy.cs50.net/api/1.2/trips?a=" + origin +
                 "&b=" + dest + "&output=xml";
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-
             TileUpdater updater = CreateNewTileUpdater();
 
             // get the next countdown from Shuttleboy

@@ -86,7 +86,7 @@ namespace HarvardShuttle
 
         private async void UpdateFavoritesCache(string origin, string dest)
         {
-            file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStore);
+            file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStorePath);
             favoritesXmlCache = await FileIO.ReadTextAsync(file);
 
             isFav = false;
@@ -109,7 +109,7 @@ namespace HarvardShuttle
         private void UpdateFavButton(string currOrigin, string currDest)
         {
             // Grab the favorites xml
-            //StorageFile file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStore);
+            //StorageFile file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStorePath);
             //string favoritesXml = await FileIO.ReadTextAsync(file);
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(favoritesXmlCache);
@@ -179,7 +179,7 @@ namespace HarvardShuttle
         /// <param name="e"></param>
         private async void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            //StorageFile file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStore);
+            //StorageFile file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStorePath);
             //string favoritesXml = await FileIO.ReadTextAsync(file);
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(favoritesXmlCache);
