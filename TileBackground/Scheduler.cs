@@ -15,6 +15,7 @@ using System.Xml;
 using Windows.UI.Xaml.Controls;
 using Windows.Storage;
 using Windows.Networking.Connectivity;
+using Windows.Data.Json;
 
 
 namespace TileBackground
@@ -69,7 +70,7 @@ namespace TileBackground
         private async static void CallService(string origin, string dest, ListView resultsList, TextBlock numMinutes, TextBlock units)
         {
             string url = "http://shuttleboy.cs50.net/api/1.2/trips?a=" + origin +
-                "&b=" + dest + "&output=xml";
+                "&b=" + dest + "&output=json";
             TileUpdater updater = CreateNewTileUpdater();
 
             // get the next countdown from Shuttleboy
@@ -85,34 +86,31 @@ namespace TileBackground
 
             var client = new System.Net.Http.HttpClient();
             HttpResponseMessage response = client.GetAsync(url).Result;
-            using (Stream responseStream = await response.Content.ReadAsStreamAsync())
-            using (XmlReader reader = XmlReader.Create(responseStream))
-            {
-                while (reader.Read())
-                {
-                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "departs")
-                    {
-                        reader.Read();
-                        minuteCountdown = GetMinuteCountdown(reader.Value);
 
-                        // add listings to main UI
-                        if (resultsList != null)
-                        {
-                            if (numNotifications == 0)
-                                SetCountdownBox(numMinutes, units, minuteCountdown);
-                            else
-                                AddListing(minuteCountdown, resultsList);
-                            numListings++;
-                        }
+            string responseString = await response.Content.ReadAsStringAsync();
+            responseString = "{\"trips\": " + responseString + "}";
+            JsonObject obj = JsonObject.Parse(responseString);
 
-                        // add tile notifications
-                        if (numNotifications <= maxNotifications)
-                            numNotifications = AddTileNotifications(minuteCountdown, numNotifications, origin, dest, updater);
+            foreach (JsonValue val in obj["trips"].GetArray()) {
+                JsonObject trip = val.GetObject();
 
-                        if (numListings > maxListings)
-                            break;
-                    }
+                minuteCountdown = GetMinuteCountdown(trip["departs"].GetString());
+
+                // add listings to main UI
+                if (resultsList != null) {
+                    if (numNotifications == 0)
+                        SetCountdownBox(numMinutes, units, minuteCountdown);
+                    else
+                        AddListing(minuteCountdown, resultsList);
+                    numListings++;
                 }
+
+                // add tile notifications
+                if (numNotifications <= maxNotifications)
+                    numNotifications = AddTileNotifications(minuteCountdown, numNotifications, origin, dest, updater);
+
+                if (numListings > maxListings)
+                    break;
             }
 
             if (resultsList.Items.Count == 0) {

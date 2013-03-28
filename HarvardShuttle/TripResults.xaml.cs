@@ -23,6 +23,8 @@ using Windows.Data.Xml.Dom;
 using Windows.Storage.Pickers;
 using Windows.Storage;
 using Windows.ApplicationModel.Background;
+using Bing.Maps;
+using Windows.UI;
 
 // The Basic Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234237
 
@@ -59,23 +61,81 @@ namespace HarvardShuttle
             Tuple<string, string> items = (Tuple<string, string>)navigationParameter;
             currOrigin = items.Item1;
             currDest = items.Item2;
-
             UpdateFavoritesCache(currOrigin, currDest);
-
-            // Update the schedule asynchronously
-            Scheduler.CreateSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
-            UpdateOriginDest(currOrigin, currDest);
 
             this.pageTitle.Text = "Trip Results";
 
+            Tuple<string, string> cs50names = await APIDataStore.GetCS50Names(currOrigin, currDest);
+            string originCS50 = cs50names.Item1;
+            string destCS50 = cs50names.Item2;
+            UpdateOriginDest(currOrigin, currDest);
+
+            // Update the schedule asynchronously
+            Scheduler.CreateSchedule(originCS50, destCS50, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
+
             // Register the background task
-            if (GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Denied && 
+            if (GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Denied &&
                 GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Unspecified)
                 RegisterBackgroundTask();
 
-            // Get arrival estimate
-            this.estimateBox.Text = await APIDataStore.GetArrivalEstimates(currOrigin, currDest);
-            this.estimateBox.Text = "| " + this.estimateBox.Text + " |";
+            this.estimateBox.Text = await Task<string>.Run(() => APIDataStore.GetArrivalEstimates(currOrigin, currDest));
+
+            Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap;
+            if (estimateBox.Text != "") {
+                // if boardingTime > scheduledTime, changed boarding box to say "Probably leaving in (may need to span more columns)
+                // Get Routes (returns routes shared between origin and dest that are active, mapped to tuple of color, name and list of segments)
+                routeMap = await APIDataStore.GetRoutes(currOrigin, currDest);
+            }
+            else {
+                // "No estimate for boarding time" (may need to span more columns)
+                // make invisible estimateBox, estimateMinutesBox
+                // get all routes
+                routeMap = await APIDataStore.GetRoutes("", "");
+            }
+
+            // if there are no routes, hide map and color code, replace with message that there are no routes currently running
+            if (routeMap.Keys.Count == 0) {
+                this.shuttleMap.Visibility = Visibility.Collapsed;
+                // collapse color code
+                // display message that no routes are running
+                return;
+            }
+
+            // Get Segments (returns segment dictionary) // maps segment ids to List<Location>
+            //Dictionary<string, List<Location>> segmentMap = await APIDataStore.GetSegments();
+            // foreach route, plot segment in that color
+            foreach (string routeId in routeMap.Keys) {
+                Tuple<string, string, List<LocationCollection>> routeData = routeMap[routeId];
+                string routeName = routeData.Item1;
+                string routeColor = routeData.Item2;
+                byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+                byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+                byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+                List<LocationCollection> locs = routeData.Item3;
+                var derp = locs[0].ToList<Location>();
+
+                /*string theLocations = "";
+                foreach (LocationCollection locCol in locs) {
+                    foreach (Location fack in locCol) {
+                        theLocations += fack.Latitude.ToString() + ", " + fack.Longitude.ToString() + "\n";
+                    }
+                }
+                string win = theLocations; */
+
+                foreach (LocationCollection collection in locs) {
+                    MapShapeLayer shapeLayer = new MapShapeLayer();
+                    MapPolyline polyline = new MapPolyline();
+                    polyline.Locations = collection;
+                    polyline.Color = Color.FromArgb(255, r, g, b);
+                    polyline.Width = 5;
+                    shapeLayer.Shapes.Add(polyline);
+                    shuttleMap.ShapeLayers.Add(shapeLayer);
+                }
+            }
+            // update color codes on UI
+
+            // plot shuttles
+            // make background task to plot shuttles every 1-2 seconds
         }
 
         /// <summary>
@@ -140,7 +200,7 @@ namespace HarvardShuttle
         {
             if (isFav)
                 this.FavoriteButton.Style = (Style)Application.Current.Resources["UnfavoriteAppBarButtonStyle"];
-            else 
+            else
                 this.FavoriteButton.Style = (Style)Application.Current.Resources["FavoriteAppBarButtonStyle"];
         }
 
@@ -149,8 +209,7 @@ namespace HarvardShuttle
         /// </summary>
         private static void RegisterBackgroundTask()
         {
-            foreach (var task in BackgroundTaskRegistration.AllTasks)
-            {
+            foreach (var task in BackgroundTaskRegistration.AllTasks) {
                 if (task.Value.Name == "BackgroundLiveTiles")
                     task.Value.Unregister(true);
             }
@@ -170,8 +229,7 @@ namespace HarvardShuttle
 
             IBackgroundTaskRegistration taskRegistration = builder.Register();
 
-            foreach (var task in BackgroundTaskRegistration.AllTasks)
-            {
+            foreach (var task in BackgroundTaskRegistration.AllTasks) {
                 var derp = task.ToString();
             }
         }
@@ -206,6 +264,5 @@ namespace HarvardShuttle
             UpdateButtonStyle();
             await FileIO.WriteTextAsync(file, favoritesXmlCache);
         }
-
     }
 }

@@ -64,8 +64,8 @@ namespace HarvardShuttle
             this.itemGridView.SelectedIndex = -1;
             this.pageTitle.Text = "Harvard Shuttle";
 
-            if (asyncStatus == BackgroundAccessStatus.Unspecified)
-                asyncStatus = await BackgroundExecutionManager.RequestAccessAsync();
+            //if (asyncStatus == BackgroundAccessStatus.Unspecified)
+            //    asyncStatus = await BackgroundExecutionManager.RequestAccessAsync();
 
             APIDataStore.InitDataStore(DataSource.GetGroup("Group-1").Items.ToList());
         }
