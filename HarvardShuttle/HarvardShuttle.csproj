@@ -138,6 +138,7 @@
       <SubType>Designer</SubType>
     </AppxManifest>
     <None Include="Common\ReadMe.txt" />
+    <None Include="DataSource\db.json" />
     <None Include="HarvardShuttle_TemporaryKey.pfx" />
     <None Include="Properties\DataSources\HarvardShuttle.Data.DataCommon.datasource" />
     <None Include="Properties\DataSources\HarvardShuttle.Data.DataGroup.datasource" />
