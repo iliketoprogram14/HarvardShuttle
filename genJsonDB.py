@@ -54,16 +54,19 @@ def clean(s):
 
 def cleanTime(string):
     string = string.replace("To Allston Campus", "").replace('"','').replace("<p>","").replace("</p>",'')
-    string = string.replace("To Allston", "")
+    string = string.replace("To Allston", "").replace("Campus", "")
     string = string.replace("To Garage via Harvard Square", "")
     #string = string.replace("<strong>FRIDAY AND SATURDAY NIGHT ONLY</strong>", "")
     return string
 
 def adjustTime(time, isMorning):
-    if (time == ""): return (time, isMorning)
+    if (time == "" or time == "|"): return (time, isMorning)
     if "am" in time or "AM" in time:
         isMorning = True
         time = time.replace("am", "").replace("AM", "").strip()
+        fields = time.split(":")
+        fields[0] = "0" if fields[0] == "12" else fields[0]
+        time = str(int(fields[0]) + 12) + ":" + fields[1]
     elif "pm" in time or "PM" in time:
         isMorning = False
         time = time.replace("pm", "").replace("PM", "").strip()
@@ -71,7 +74,12 @@ def adjustTime(time, isMorning):
         time = str(int(fields[0]) + 12) + ":" + fields[1]
     elif not isMorning:
         fields = time.split(":")
-        time = str(int(fields[0]) + 12) + ":" + fields[1]
+        fields[0] = "0" if fields[0] == "12" or fields[0] == "0" else str(int(fields[0]) + 12)
+        time = fields[0] + ":" + fields[1]
+    else:
+        fields = time.split(":")
+        fields[0] = "0" if fields[0] == "12" else fields[0]
+        time = str(int(fields[0]) + 12) + ":" + fields[1]        
     return (time, isMorning)
 
 def writeExpressTimes(writer, first_trip, last_trip, step, stops_dict):
@@ -129,7 +137,7 @@ def writeStops(writer, stops, fixed_names, namesToIDs):
 
 def writeRoute(writer, lines, route_ids, fixed_names):
     # Get the title
-    title = lines[1].replace(",", "").title().replace("Er", "er")
+    title = lines[1].replace(",", "").title().replace("Er", "er").replace("Pm", "PM")
 
     # Get the id and the stops of the route
     route_id = route_ids[title]
@@ -309,6 +317,10 @@ for i in range(first, last):
         elif (lines[0] == "morning-afternoon-monday-friday"):
             Allston_AM_idx = i
             continue
+        else:
+            lines[1] = "Allston Campus PM-Weekends"
+            writeRoute(writer, lines, route_ids, fixed_names)
+            writer.write(",")
     elif (title == "River Houses A-B-C"):
         #writeRiverHouses(writer, lines, route_ids, fixed_names)
         #continue
