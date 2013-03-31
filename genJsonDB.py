@@ -143,6 +143,18 @@ def writeRoute(writer, lines, route_ids, fixed_names):
     route_id = route_ids[title]
     stops = lines[2].split(',')
 
+    # Get date_time
+    days = None
+    if "monday-friday" in lines[0]:
+        days = "Mon,Tue,Wed,Thu,Fri"
+    elif "weekends" in lines[0]:
+        days = "Sat,Sun"
+    elif "overnight" in lines[0]:
+        days = "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
+    else:
+        print "DANGER " + lines[0]
+        sys.exit()
+
     print ""
     print i, title
 
@@ -150,10 +162,11 @@ def writeRoute(writer, lines, route_ids, fixed_names):
     writer.beginObj()
     writer.writeKeyVal("id", route_id, True)
     writer.writeKeyVal("name", title, True)
+    writer.writeKeyVal("days", days, True)
 
     # Write the "special" field
     special_val = "1" if title == "Extended Overnight" else "0"
-    writer.writeKeyVal("special", special_val, True)
+    writer.writeKeyVal("days_change", special_val, True)
 
     # Write stops
     id_lst = writeStops(writer, stops, fixed_names, namesToIDs)
