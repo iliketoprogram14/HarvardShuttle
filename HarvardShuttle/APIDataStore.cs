@@ -329,7 +329,7 @@ namespace HarvardShuttle
                     foreach (JsonValue segment_id in segmentArr) {
                         string segmentID = segment_id.Stringify().Replace("\"", "");
                         var derp = segmentMap[segmentID].Stringify();
-                        string encoded_segment = segmentMap[segmentID].Stringify().Replace("\"", "");
+                        string encoded_segment = segmentMap[segmentID].Stringify().Replace("\"", "").Replace("\\\\", "\\");
                         List<Location> locations = DecodeLatLong(encoded_segment);
                         LocationCollection segment_ids = new LocationCollection();
                         //if (segmentID == "4028995") {

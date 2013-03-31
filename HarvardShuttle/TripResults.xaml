@@ -286,7 +286,7 @@
             </StackPanel>
         </Viewbox>
         <Viewbox  Grid.Row="1" Grid.Column="5" VerticalAlignment="Bottom" >
-            <TextBlock x:Name="estimatedMinutesTextBlock" HorizontalAlignment="Left" Margin="5,0,0,12" TextWrapping="Wrap" Text="minutes"/>
+            <TextBlock x:Name="estimatedMinutesTextBlock" HorizontalAlignment="Left" Margin="5,0,0,12" TextWrapping="Wrap" Text=""/>
         </Viewbox>
 
         <Viewbox  Grid.Row="2" Grid.Column="1" VerticalAlignment="Bottom" Grid.ColumnSpan="2" HorizontalAlignment="Right">
@@ -300,7 +300,7 @@
             </StackPanel>
         </Viewbox>
         <Viewbox Grid.Row="2" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Bottom">
-            <TextBlock x:Name="minutesTextBlock"  Margin="5,0,0,12" TextWrapping="Wrap" Text="minutes" />
+            <TextBlock x:Name="minutesTextBlock"  Margin="5,0,0,12" TextWrapping="Wrap" Text="" />
         </Viewbox>
 
         <ListView  Grid.Row="3" Grid.Column="4" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,30,0,0" x:Name="ResultsList" IsDoubleTapEnabled="False" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" FontSize="30" >
@@ -323,9 +323,9 @@
                     <!--<Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Width="800" Height="900" Stroke="Black" VerticalAlignment="Top" Canvas.ZIndex="1" Opacity="0" />-->
                     <Maps:Map Name="shuttleMap" Credentials="AhYTEH1C_7wVcn9raY0Lw0wVxc4GAySSK2ZgvXhwvpvzxjfPcWNwllRu3001Rasf" HorizontalAlignment="Center" 
                     		VerticalAlignment="Top" ZoomLevel="16" ShowScaleBar="False" ShowNavigationBar="False" ShowBuildings="False"
-                    		ViewRestriction="MapOnly" ManipulationMode="None" Canvas.ZIndex="0" Width="950" Height="1000">
+                    		ViewRestriction="MapOnly" ManipulationMode="None" Canvas.ZIndex="0" Width="1000" Height="1060">
                         <Maps:Map.Center>
-                            <Maps:Location Latitude="42.375246" Longitude="-71.118772"/>
+                            <Maps:Location Latitude="42.374700" Longitude="-71.118772"/>
                         </Maps:Map.Center>
                     </Maps:Map>
                 </Grid>

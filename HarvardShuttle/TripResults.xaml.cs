@@ -65,6 +65,8 @@ namespace HarvardShuttle
 
             this.pageTitle.Text = "Trip Results";
 
+            this.estimateBox.Text = await Task<string>.Run(() => APIDataStore.GetArrivalEstimates(currOrigin, currDest));
+            this.estimatedMinutesTextBlock.Text = "minutes";
             Tuple<string, string> cs50names = await APIDataStore.GetCS50Names(currOrigin, currDest);
             string originCS50 = cs50names.Item1;
             string destCS50 = cs50names.Item2;
@@ -78,7 +80,6 @@ namespace HarvardShuttle
                 GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Unspecified)
                 RegisterBackgroundTask();
 
-            this.estimateBox.Text = await Task<string>.Run(() => APIDataStore.GetArrivalEstimates(currOrigin, currDest));
 
             Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap;
             if (estimateBox.Text != "") {
@@ -126,8 +127,8 @@ namespace HarvardShuttle
                     MapShapeLayer shapeLayer = new MapShapeLayer();
                     MapPolyline polyline = new MapPolyline();
                     polyline.Locations = collection;
-                    polyline.Color = Color.FromArgb(255, r, g, b);
-                    polyline.Width = 5;
+                    polyline.Color = Color.FromArgb(128, r, g, b);
+                    polyline.Width = 10;
                     shapeLayer.Shapes.Add(polyline);
                     shuttleMap.ShapeLayers.Add(shapeLayer);
                 }
