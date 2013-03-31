@@ -1,0 +1,57 @@
+<api_store><stops>
+
+<stop s_id='4070614'><title>Quad</title><cs50name>Quad</cs50name><stop_routes>4002342,4002346,4002350,4003238,4003242,4003250,4003254,4003262,4003266</stop_routes></stop>
+
+<stop s_id='4070630'><title>Mass Ave Garden St</title><cs50name>Mass Ave Garden St</cs50name><stop_routes>4002342,4002346,4002350,4003238,4003250,4003254,4003262,4003266</stop_routes></stop>
+
+<stop s_id='4070634'><title>Memorial Hall</title><cs50name>Memorial Hall</cs50name><stop_routes>4000970,4002342,4002346,4003234,4003238,4003246,4003250,4003262,4003266</stop_routes></stop>
+
+<stop s_id='4070638'><title>Lamont Library</title><cs50name>Lamont Library</cs50name><stop_routes>4000970,4002342,4002346,4002350,4003234,4003242,4003246,4003250,4003254,4003262,4003266</stop_routes></stop>
+
+<stop s_id='4070642'><title>Boylston Gate</title><cs50name>Boylston Gate</cs50name><stop_routes>4002342,4002346,4003234,4003246,4003250,4003254,4003262,4003266</stop_routes></stop>
+
+<stop s_id='4070646'><title>Harvard Square</title><cs50name>Harvard Square</cs50name><stop_routes>4000970,4002350</stop_routes></stop>
+
+<stop s_id='4070654'><title>Stadium</title><cs50name>Stadium</cs50name><stop_routes>4000970,4002350,4003242</stop_routes></stop>
+
+<stop s_id='4070662'><title>Soldiers Field Park</title><cs50name>Soldiers Field Park</cs50name><stop_routes>4000970,4002350</stop_routes></stop>
+
+<stop s_id='4070666'><title>Kennedy School</title><cs50name>HKS</cs50name><stop_routes>4000970,4002350</stop_routes></stop>
+
+<stop s_id='4109006'><title>Law School</title><cs50name>Pound Hall</cs50name><stop_routes>4000970,4002342,4002346,4003246,4003250,4003262,4003266</stop_routes></stop>
+
+<stop s_id='4109010'><title>Maxwell Dworkin</title><cs50name>Maxwell Dworkin</cs50name><stop_routes>4000970,4003234,4003238,4003266</stop_routes></stop>
+
+<stop s_id='4109014'><title>Mather House</title><cs50name>Mather House</cs50name><stop_routes>4002342,4002346,4003234,4003242,4003246,4003250,4003262,4003266</stop_routes></stop>
+
+<stop s_id='4109018'><title>Peabody Terrace</title><cs50name>Peabody Terrace</cs50name><stop_routes>4002346,4003262</stop_routes></stop>
+
+<stop s_id='4117718'><title>Winthrop House</title><cs50name>Winthrop House</cs50name><stop_routes>4003242,4003262,4003266</stop_routes></stop>
+
+<stop s_id="4070658"><title>HiLab-HBS</title><cs50name>blegh</cs50name><stop_routes>4000970,4002350</stop_routes></stop></stops>
+
+<routes>
+
+<route r_id='4002350'>Quad,Mass Ave Garden St,Lamont Library,Harvard Square,Stadium,Soldiers Field Park,Kennedy School,HiLab-HBS<name>Allston Campus PM-Weekends</name></route>
+
+<route r_id='4002342'>Quad,Mass Ave Garden St,Memorial Hall,Lamont Library,Boylston Gate,Law School,Mather House<name>Crimson Cruiser</name></route>
+
+<route r_id='4002346'>Quad,Mass Ave Garden St,Memorial Hall,Lamont Library,Boylston Gate,Law School,Mather House,Peabody Terrace<name>1636'er</name></route>
+
+<route r_id='4003242'>Quad,Lamont Library,Stadium,Mather House,Winthrop House<name>Quad Stadium</name></route>
+
+<route r_id='4003254'>Quad,Mass Ave Garden St,Lamont Library,Boylston Gate<name>Quad Yard Express</name></route>
+
+<route r_id='4000970'>Memorial Hall,Lamont Library,Harvard Square,Stadium,Soldiers Field Park,Kennedy School,Law School,Maxwell Dworkin,HiLab-HBS!!!!<name>Allston Campus Express</name></route>
+
+<route r_id='4003238'>Quad,Mass Ave Garden St,Memorial Hall,Maxwell Dworkin<name>Quad Express</name></route>
+
+<route r_id='4003246'>Memorial Hall,Lamont Library,Boylston Gate,Law School,Mather House<name></name></route><name>River House A</name>
+
+<route r_id='4003250'>Quad,Mass Ave Garden St,Memorial Hall,Lamont Library,Boylston Gate,Law School,Mather House<name>River House B??????</name></route>
+
+<route r_id='4003262'>Quad,Mass Ave Garden St,Memorial Hall,Lamont Library,Boylston Gate,Law School,Mather House,Peabody Terrace,Winthrop House<name>River Houses C</name></route>
+
+<route r_id='4003234'>Memorial Hall,Lamont Library,Boylston Gate,Maxwell Dworkin,Mather House<name></name>Mather Express</route>
+
+<route r_id='4003266'>Quad,Mass Ave Garden St,Memorial Hall,Lamont Library,Boylston Gate,Law School,Maxwell Dworkin,Mather House,Winthrop House<name>Extended Overnight</name></route>

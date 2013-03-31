@@ -28,7 +28,7 @@ class Writer:
         self.writeVal(v, notLast)
 
     def writeVal(self, v, notLast):
-        self.write('"' + v + '"' + (", " if notLast else ""))
+        self.write('"' + str(v) + '"' + (", " if notLast else ""))
 
     def beginObj(self):
         self.f.write("{")
@@ -113,6 +113,92 @@ def writeMatherExpressTimes(writer, stops_dict):
     step = 10
     writeExpressTimes(writer, first_trip, last_trip, step, stops_dict)
 
+def writeStops(writer, stops, fixed_names, namesToIDs):
+    writer.writeKey("stops")
+    id_lst = []
+    for stop in stops:
+        stop = stop.replace('"', ""). replace("'", "")
+        if stop == "": continue
+        if stop == "Garden St": continue
+        fixed_name = fixed_names[stop]
+        id_lst.append(namesToIDs[fixed_name])
+        print stop, fixed_name, namesToIDs[fixed_name]
+    writer.writeArray(id_lst)
+    writer.write(",")
+    return id_lst
+
+def writeRoute(writer, lines, route_ids, fixed_names):
+    # Get the title
+    title = lines[1].replace(",", "").title().replace("Er", "er")
+
+    # Get the id and the stops of the route
+    route_id = route_ids[title]
+    stops = lines[2].split(',')
+
+    print ""
+    print i, title
+
+    # Write first part of object
+    writer.beginObj()
+    writer.writeKeyVal("id", route_id, True)
+    writer.writeKeyVal("name", title, True)
+
+    # Write the "special" field
+    special_val = "1" if title == "Extended Overnight" else "0"
+    writer.writeKeyVal("special", special_val, True)
+
+    # Write stops
+    id_lst = writeStops(writer, stops, fixed_names, namesToIDs)
+    
+    # Write trips
+    writer.writeKey("trips")
+    writer.beginArray()
+    num_lines = len(lines)
+    isMorning = True
+    special_activated = False
+    for j, line in enumerate(lines[3:]): # trip j has k times
+        if line == "": continue
+        times = line.split(",")
+
+        # Handle the special case: Extended Overnight
+        if (special_val == "1"):
+            if (title == "Extended Overnight"):
+                if (times[0] == "<strong>FRIDAY AND SATURDAY NIGHT ONLY</strong>"):
+                    special_activated = True
+                    continue
+                writer.beginObj()
+                val = "Fri,Sat" if special_activated else "Sun,Mon,Tue,Wed,Thur,Fri,Sat"
+                writer.writeKeyVal("special", val, True)
+            else:
+                print "FALSE SPECIAL CASE " + title
+                sys.exit()
+        else:
+            writer.beginObj()
+
+
+        # Write out the times for this particular trip (trip j)
+        for k, time in enumerate(times):
+            time, isMorning = adjustTime(cleanTime(time), isMorning)
+            # If we hit "|", we need to generate times :(
+            if (time == "|"):
+                if (title == "Quad Express"):
+                    writeQuadExpressTimes(writer, id_lst)
+                elif (title == "Mather Express"):
+                    writeMatherExpressTimes(writer, id_lst)
+                else:
+                    print "FAIL WILL ROBINSON " + title
+                    sys.exit()
+                break
+            # Otherwise, just write out the time as is
+            else:
+                writer.writeKeyVal(id_lst[k], time, (k != len(times)-1))
+        writer.endObj()
+        if (j+3 < num_lines - 2):
+            writer.write(", ")
+
+    writer.endArray()
+    writer.endObj()
+
 
 stop_str = open('api_data_store.xml', 'r').read()
 dom = DOM(stop_str)
@@ -182,105 +268,69 @@ fixed_names["Memorial"] = "Memorial Hall"
 fixed_names["Peabody"] = "Peabody Terrace"
 fixed_names["Boylston"] = "Boylston Gate"
 
+# Hard coded ids
+route_ids = dict()
+route_ids["Allston Campus PM-Weekends"] = 4002350
+route_ids["Crimson Cruiser"] = 4002342
+route_ids["1636'er"] = 4002346
+route_ids["Quad Stadium"] = 4003242
+route_ids["Quad Yard Express"] = 4003254
+route_ids["Allston Campus Express"] = 4000970
+route_ids["Quad Express"] = 4003238
+route_ids["River House A"] = 4003246
+route_ids["River House B"] = 4003250
+route_ids["River House C"] = 4003262
+route_ids["Mather Express"] = 4003234
+route_ids["Extended Overnight"] = 4003266
+
+""" KILL THIS """
+route_ids["River Houses A-B-C"] = "blah"
+
 # Route metadata
 first = 1 # idx of first route
 last = 12 # idx after last route
 routes = dom.by_tag("routes")
+Allston_PM_idx = None
+Allston_AM_idx = None
 
 # Iterate through each of the routes
 for i in range(first, last):
     fileStr = open(str(i) + ".csv", "r").read()
     lines = fileStr.split("\n")
 
-    # Get the title, id, and the stops of the route
-    title = lines[1].replace(",","").title()
-    route_id = "blah"
-    stops = lines[2].split(',')
+    # Get the title
+    title = lines[1].replace(",", "").title().replace("Er", "er")
 
-    print ""
-    print i, title
-
-    # Write first part of object
-    writer.beginObj()
-    writer.writeKeyVal("id", route_id, True)
-    writer.writeKeyVal("name", title, True)
-
-    # Write the "special" field
-    special_val = "1" if title == "Extended Overnight" else "0"
-    writer.writeKeyVal("special", special_val, True)
-
-    # Write stops
-    writer.writeKey("stops")
-    id_lst = []
-    for stop in stops:
-        stop = stop.replace('"', ""). replace("'", "")
-        if stop == "": continue
-        if stop == "Garden St": continue
-        fixed_name = fixed_names[stop]
-        id_lst.append(namesToIDs[fixed_name])
-        print stop, fixed_name, namesToIDs[fixed_name]
-    writer.writeArray(id_lst)
-    writer.write(",")
-    
-    # Write trips
-    writer.writeKey("trips")
-    writer.beginArray()
-    num_lines = len(lines)
-    isMorning = True
-    special_activated = False
-    for j, line in enumerate(lines[3:]): # trip j has k times
-        if line == "": continue
-        times = line.split(",")
-
-        # Handle the special case: Extended Overnight
-        if (special_val == "1"):
-            if (title == "Extended Overnight"):
-                if (times[0] == "<strong>FRIDAY AND SATURDAY NIGHT ONLY</strong>"):
-                    special_activated = True
-                    continue
-                writer.beginObj()
-                val = "Fri,Sat" if special_activated else "Sun,Mon,Tue,Wed,Thur,Fri,Sat"
-                writer.writeKeyVal("special", val, True)
-            else:
-                print "FALSE SPECIAL CASE " + title
-                sys.exit()
-        else:
-            writer.beginObj()
-
-
-        # Write out the times for this particular trip (trip j)
-        for k, time in enumerate(times):
-            time, isMorning = adjustTime(cleanTime(time), isMorning)
-            # If we hit "|", we need to generate times :(
-            if (time == "|"):
-                if (title == "Quad Express"):
-                    writeQuadExpressTimes(writer, id_lst)
-                elif (title == "Mather Express"):
-                    writeMatherExpressTimes(writer, id_lst)
-                else:
-                    print "FAIL WILL ROBINSON " + title
-                    sys.exit()
-                break
-            # Otherwise, just write out the time as is
-            else:
-                writer.writeKeyVal(id_lst[k], time, (k != len(times)-1))
-        writer.endObj()
-        if (j+3 < num_lines - 2):
-            writer.write(", ")
-
-    writer.endArray()
-    writer.endObj()
-
-    if (i < last-1):
+    # If we encounter evening or weekend Allston Campus Express, save for later merging
+    if (title == "Allston Campus Express"):
+        if (lines[0] == "evening-nights-monday_friday"):
+            Allston_PM_idx = i
+            continue
+        elif (lines[0] == "morning-afternoon-monday-friday"):
+            Allston_AM_idx = i
+            continue
+    elif (title == "River Houses A-B-C"):
+        #writeRiverHouses(writer, lines, route_ids, fixed_names)
+        #continue
+        lines_a = open("river_a.csv", "r").read().split("\n")
+        lines_b = open("river_b.csv", "r").read().split("\n")
+        lines_c = open("river_c.csv", "r").read().split("\n")
+        writeRoute(writer, lines_a, route_ids, fixed_names)
+        writer.write(", ")
+        writeRoute(writer, lines_b, route_ids, fixed_names)
+        writer.write(", ")
+        writeRoute(writer, lines_c, route_ids, fixed_names)
+        writer.write(", ")
+    else:
+        writeRoute(writer, lines, route_ids, fixed_names)
+        #if (i < last-1):
         writer.write(",")
+
+# Write out the Allston Campus Express route
+lines = open("allston.csv", "r").read().split("\n")
+writeRoute(writer, lines, route_ids, fixed_names)
 
 writer.endArray()
 writer.endObj()
-
-
-
-
-
-
 
 sys.exit()
