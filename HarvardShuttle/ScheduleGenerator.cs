@@ -17,10 +17,9 @@ using Windows.Storage;
 using Windows.Networking.Connectivity;
 using Windows.Data.Json;
 
-
-namespace TileBackground
+namespace HarvardShuttle
 {
-    public static class Scheduler
+    class ScheduleGenerator
     {
         private static string store = "last_origin_dest.xml";
         private static int maxListings = 30;
@@ -37,7 +36,7 @@ namespace TileBackground
 
         public async static void CreateExtendedSchedule()
         {
-            StorageFile file = await ApplicationData.Current.LocalFolder.GetFileAsync(Scheduler.store);
+            StorageFile file = await ApplicationData.Current.LocalFolder.GetFileAsync(store);
             string storeXml = await FileIO.ReadTextAsync(file);
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(storeXml);
@@ -48,7 +47,69 @@ namespace TileBackground
             CallService(origin, dest, null, null, null);
         }
 
-        
+
+        public async static void CreateNewSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock numMinutes, TextBlock units)
+        {
+            // get intersection of routes between origin and dest
+            //Tuple<string, string, IEnumerable<string>> routes_and_ids = await APIDataStore._GetCommonRoutesAndStopIds(new_origin, new_dest);
+            
+            // for each of those routes, grab the next 20 trips
+            List<string> times = await APIDataStore.GetTimes(20, new_origin, new_dest);
+            // write the first trip to the textblock
+            // update the resultsList and its height
+
+            TileUpdater updater = CreateNewTileUpdater();
+
+            int minuteCountdown = 0;
+            int numNotifications = 0;
+            int numListings = 0;
+            foreach (string time in times) {
+
+                minuteCountdown = GetNewMinuteCountdown(time);
+
+                // add listings to main UI
+                if (results != null) {
+                    if (numNotifications == 0)
+                        SetCountdownBox(numMinutes, units, minuteCountdown);
+                    else
+                        AddListing(minuteCountdown, results);
+                    numListings++;
+                }
+
+                // add tile notifications
+                if (numNotifications <= maxNotifications)
+                    numNotifications = AddTileNotifications(minuteCountdown, numNotifications, new_origin, new_dest, updater);
+
+                if (numListings > maxListings)
+                    break;
+            }
+
+            if (results.Items.Count == 0) {
+                results.Items.Add("No further times scheduled.");
+            }
+        }
+
+
+
+        private static int GetNewMinuteCountdown(string timeStr)
+        {
+            string[] time = timeStr.Split(':');
+            int departMin = Convert.ToInt32(time[1]);
+            int departHour = Convert.ToInt32(time[0]);
+
+            int minuteCountdown = departHour * 60 + departMin - (DateTime.Now.TimeOfDay.Hours * 60 + DateTime.Now.TimeOfDay.Minutes);
+            if (minuteCountdown < 0) minuteCountdown = (24 * 60) + minuteCountdown;
+
+            return minuteCountdown;
+        }
+
+
+
+
+
+
+
+
         private async static void UpdateLastOriginDest(string new_origin, string new_dest)
         {
             string xml = "<last_trip>";
@@ -59,12 +120,12 @@ namespace TileBackground
             bool fileExists = true;
             StorageFile file = null;
             try {
-                file = await ApplicationData.Current.LocalFolder.GetFileAsync(Scheduler.store);
+                file = await ApplicationData.Current.LocalFolder.GetFileAsync(store);
             } catch (Exception) {
                 fileExists = false;
             }
             if (!fileExists)
-                file = await ApplicationData.Current.LocalFolder.CreateFileAsync(Scheduler.store, CreationCollisionOption.ReplaceExisting);
+                file = await ApplicationData.Current.LocalFolder.CreateFileAsync(store, CreationCollisionOption.ReplaceExisting);
 
             await FileIO.WriteTextAsync(file, xml);
         }

@@ -73,7 +73,9 @@ namespace HarvardShuttle
             UpdateOriginDest(currOrigin, currDest);
 
             // Update the schedule asynchronously
-            Scheduler.CreateSchedule(originCS50, destCS50, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
+            //Scheduler.CreateSchedule(originCS50, destCS50, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
+            //ScheduleGenerator.CreateSchedule(originCS50, destCS50, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
+            ScheduleGenerator.CreateNewSchedule(originCS50, destCS50, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
 
             // Register the background task
             if (GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Denied &&

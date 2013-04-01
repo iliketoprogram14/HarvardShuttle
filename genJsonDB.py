@@ -61,17 +61,19 @@ def cleanTime(string):
 
 def adjustTime(time, isMorning):
     if (time == "" or time == "|"): return (time, isMorning)
+    hr = int(time.split(":")[0])
     if "am" in time or "AM" in time:
         isMorning = True
         time = time.replace("am", "").replace("AM", "").strip()
         fields = time.split(":")
         fields[0] = "0" if fields[0] == "12" else fields[0]
-        time = str(int(fields[0]) + 12) + ":" + fields[1]
-    elif "pm" in time or "PM" in time:
+        time = str(int(fields[0])) + ":" + fields[1]
+    elif "pm" in time or "PM" in time or (hr > 12 and hr < 24):
         isMorning = False
         time = time.replace("pm", "").replace("PM", "").strip()
         fields = time.split(":")
-        time = str(int(fields[0]) + 12) + ":" + fields[1]
+        if int(fields[0]) < 12: fields[0] = str(int(fields[0]) + 12)
+        time = fields[0] + ":" + fields[1]
     elif not isMorning:
         fields = time.split(":")
         fields[0] = "0" if fields[0] == "12" or fields[0] == "0" else str(int(fields[0]) + 12)
@@ -79,7 +81,7 @@ def adjustTime(time, isMorning):
     else:
         fields = time.split(":")
         fields[0] = "0" if fields[0] == "12" else fields[0]
-        time = str(int(fields[0]) + 12) + ":" + fields[1]        
+        time = str(int(fields[0])) + ":" + fields[1]        
     return (time, isMorning)
 
 def writeExpressTimes(writer, first_trip, last_trip, step, stops_dict):
@@ -127,7 +129,7 @@ def writeStops(writer, stops, fixed_names, namesToIDs):
     for stop in stops:
         stop = stop.replace('"', ""). replace("'", "")
         if stop == "": continue
-        if stop == "Garden St": continue
+        #if stop == "Garden St": continue
         fixed_name = fixed_names[stop]
         id_lst.append(namesToIDs[fixed_name])
         print stop, fixed_name, namesToIDs[fixed_name]
@@ -272,6 +274,7 @@ writer.beginArray()
 fixed_names = dict()
 for name in namesToIDs.iterkeys():
     fixed_names[name] = name
+fixed_names["Garden St"] = "Mass Ave Garden St"
 fixed_names["WCC"] = "Law School"
 fixed_names["WCC "] = "Law School"
 fixed_names["Law"] = "Law School"
@@ -324,16 +327,20 @@ for i in range(first, last):
 
     # If we encounter evening or weekend Allston Campus Express, save for later merging
     if (title == "Allston Campus Express"):
-        if (lines[0] == "evening-nights-monday_friday"):
+        line0 = lines[0].split(",")[0]
+        if (line0 == "evening-nights-monday-friday"):
             Allston_PM_idx = i
             continue
-        elif (lines[0] == "morning-afternoon-monday-friday"):
+        elif (line0 == "morning-afternoon-monday-friday"):
             Allston_AM_idx = i
             continue
-        else:
+        elif line0 == "weekends":
             lines[1] = "Allston Campus PM-Weekends"
             writeRoute(writer, lines, route_ids, fixed_names)
             writer.write(",")
+        else:
+            print "FACK " + title + " " + line0
+            sys.exit()
     elif (title == "River Houses A-B-C"):
         #writeRiverHouses(writer, lines, route_ids, fixed_names)
         #continue

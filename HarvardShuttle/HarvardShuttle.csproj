@@ -126,6 +126,7 @@
     <Compile Include="Common\LayoutAwarePage.cs" />
     <Compile Include="Common\RichTextColumns.cs" />
     <Compile Include="Common\SuspensionManager.cs" />
+    <Compile Include="ScheduleGenerator.cs" />
     <Compile Include="SettingsFlyout.xaml.cs">
       <DependentUpon>SettingsFlyout.xaml</DependentUpon>
     </Compile>
@@ -137,8 +138,9 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <None Include="Assets\db.json" />
     <None Include="Common\ReadMe.txt" />
-    <None Include="DataSource\db.json" />
+    <Content Include="DataSource\db.json" />
     <None Include="HarvardShuttle_TemporaryKey.pfx" />
     <None Include="Properties\DataSources\HarvardShuttle.Data.DataCommon.datasource" />
     <None Include="Properties\DataSources\HarvardShuttle.Data.DataGroup.datasource" />

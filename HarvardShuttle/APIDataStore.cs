@@ -31,9 +31,77 @@ namespace HarvardShuttle
 {
     public class APIDataStore
     {
+        private static string storePath = "db.json";
         private static string dataStorePath = "api_data_store.xml";
         public static StorageFolder localFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
         private static string agency = "52";
+        private static StorageFolder installLoc = Windows.ApplicationModel.Package.Current.InstalledLocation;
+
+            
+        private class TimeObj 
+        {
+            private string originID, destID;
+            private int currTimeInt;
+            private string currTime;
+            private SortedDictionary<int, List<Tuple<string, JsonObject>>> timeDict;
+
+            public TimeObj(string originID, string destID) {
+                this.originID = originID;
+                this.destID = destID;
+                var hr = DateTime.Now.Hour;
+                var min = DateTime.Now.Minute;
+                currTimeInt = hr * 60 + min;
+                currTime = hr.ToString() + ":" + min.ToString();
+                timeDict = new SortedDictionary<int,List<Tuple<string,JsonObject>>>();
+            }
+
+            public void AddObj(JsonObject obj) {
+                // find next time
+                foreach (JsonValue val in obj["trips"].GetArray()) {
+                    JsonObject tripObj = val.GetObject();
+                    string name = obj["name"].GetString();
+                    string time = tripObj[originID].GetString();
+                    if (time == "") continue;
+                    var fields = time.Split(':');
+                    var hr = Int32.Parse(fields[0]);
+                    var min = Int32.Parse(fields[1]);
+                    int timeInt = hr * 60 + min;
+
+                    // add it in when we find it
+                    if (timeInt > currTimeInt) {
+                        List<Tuple<string, JsonObject>> derp = new List<Tuple<string,JsonObject>>();
+                        if (timeDict.ContainsKey(timeInt))
+                            derp = timeDict[timeInt];
+                        derp.Add(Tuple.Create<string, JsonObject>(time, obj));
+                        timeDict[timeInt] = derp;
+                        break;
+                    }
+                }
+            }
+
+            public string PopAndUpdate() {
+                int nextTimeInt = 0;
+                string nextTimeStr = "";
+                JsonObject routeObj = new JsonObject();
+                foreach (var derp in timeDict) {
+                    nextTimeInt = derp.Key;
+                    List<Tuple<string, JsonObject>> blegh = derp.Value;
+                    var firstTuple = blegh[0];
+                    nextTimeStr = firstTuple.Item1;
+                    routeObj = firstTuple.Item2;
+                    blegh.RemoveAt(0);
+                    if (blegh.Count == 0)
+                        timeDict.Remove(nextTimeInt);
+                    else
+                        timeDict[nextTimeInt] = blegh;
+                    break;
+                }
+                currTimeInt = nextTimeInt;
+                currTime = nextTimeStr;
+                AddObj(routeObj);
+                return nextTimeStr;
+            }
+        }
 
         #region Store Initialization
         public async static void InitDataStore(List<DataItem> items)
@@ -390,6 +458,96 @@ namespace HarvardShuttle
             return Tuple.Create<string, string, IEnumerable<string>>(originID, destID, common_routes);
         }
 
+
+
+
+        public async static Task<Tuple<string, string, IEnumerable<string>>> _GetCommonRoutesAndStopIds(string origin, string dest)
+        {
+            // Grab the API data store
+            var folder = await installLoc.GetFolderAsync("DataSource");
+            StorageFile f = await folder.GetFileAsync("db.json");
+            string store = await FileIO.ReadTextAsync(f);
+            JsonObject obj = JsonObject.Parse(store);
+            JsonArray stops = obj["stops"].GetArray();
+
+            string originID = "";
+            string destID = "";
+            List<string> origin_routes = new List<string>();
+            List<string> dest_routes = new List<string>();
+            foreach (JsonValue stopVal in stops) {
+                JsonObject stop = stopVal.GetObject();
+                string name = stop["name"].GetString();
+                if (name == origin) {
+                    originID = stop["id"].GetString();
+                    var routeArray = stop["routes"].GetArray();
+                    foreach (var routeVal in routeArray)
+                        origin_routes.Add(routeVal.GetString());
+                }
+                else if (name == dest) {
+                    destID = stop["id"].GetString();
+                    var routeArray = stop["routes"].GetArray();
+                    foreach (var routeVal in routeArray)
+                        dest_routes.Add(routeVal.GetString());
+                }
+                if (originID != "" && destID != "")
+                    break;
+            }
+            IEnumerable<string> common_routes = origin_routes.Intersect<string>(dest_routes);
+
+            return Tuple.Create<string, string, IEnumerable<string>>(originID, destID, common_routes);
+        }
+
+
+        public async static Task<List<string>> GetTimes(int num, string origin, string dest) 
+        {
+            Tuple<string, string, IEnumerable<string>> routes_and_ids = await APIDataStore._GetCommonRoutesAndStopIds(origin, dest);
+            string originID = routes_and_ids.Item1;
+            string destID = routes_and_ids.Item2;
+            List<string> routes = routes_and_ids.Item3.ToList<string>();
+
+            // Grab the data store
+            var folder = await installLoc.GetFolderAsync("DataSource");
+            StorageFile f = await folder.GetFileAsync("db.json");
+            string store = await FileIO.ReadTextAsync(f);
+            JsonObject obj = JsonObject.Parse(store);
+            JsonArray routeJson = obj["routes"].GetArray();
+
+            // Grab only the route objects you need
+            //string currTime = "";
+            List<JsonObject> routeObjList = new List<JsonObject>();
+            //Dictionary<string, Tuple<JsonObject, string>> routeDict = new Dictionary<string,Tuple<JsonObject,string>>();
+            TimeObj timeDict = new TimeObj(originID, destID);
+            foreach (JsonValue routeVal in routeJson) {
+                JsonObject routeObj = routeVal.GetObject();
+                if (routes.Contains(routeObj["id"].GetString())) {
+                    routeObjList.Add(routeObj);
+                    timeDict.AddObj(routeObj);
+                    //routeDict[routeObj["id"].GetString()] = Tuple.Create<JsonObject, string>(routeObj, nextTime(routeObj, originID, destID, currTime));
+                }
+            }
+
+
+            /* POPULATE DICTIONARY (ID -> NEXT TIME)
+             * grab next time and update the key in the dictionary that just lost its time
+             * dict[id] = nextTime(routeObj, originID, destID, prevTime)
+             * */
+
+
+            // Create an ordered list of times
+            int numRoutesCollected = 0;
+            List<string> times = new List<string>();
+            while (times.Count < num) {
+                string nextTime = timeDict.PopAndUpdate();
+                times.Add(nextTime);
+            }
+
+
+            return times;
+        }
+
+        
+
+        #region Polyline
         public static List<Location> DecodePolyline(string polyline)
         {
             if (polyline == null || polyline == "")
@@ -503,7 +661,7 @@ namespace HarvardShuttle
             finishindex = startindex;
             return dlat;
         }
-
+        #endregion
 
         public static void GetShuttles(string origin, string dest)
         {
