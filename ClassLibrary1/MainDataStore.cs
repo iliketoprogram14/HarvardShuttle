@@ -131,10 +131,12 @@ namespace DataStore
 
             public void AddObj(JsonObject obj)
             {
-                if (AddCountdown(obj, currDay, false))
+                string days = obj["days"].GetString();
+                if (days.Contains(currDay) && AddCountdown(obj, currDay, false))
                     return;
                 string nextDay = NextDay(currDay);
-                AddCountdown(obj, nextDay, true);
+                if (days.Contains(nextDay))
+                    AddCountdown(obj, nextDay, true);
             }
 
             public string PopAndUpdate()

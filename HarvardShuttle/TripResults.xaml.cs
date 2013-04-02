@@ -27,6 +27,7 @@ using Bing.Maps;
 using Windows.UI;
 using Windows.UI.Xaml.Media.Animation;
 using DataStore;
+using Windows.System.Threading;
 
 // The Basic Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234237
 
@@ -43,6 +44,7 @@ namespace HarvardShuttle
         private bool isFav;
         private string favoritesXmlCache;
         private StorageFile file;
+        private Dictionary<string,string> commonRouteIDsColors;
 
         public TripResults()
         {
@@ -104,6 +106,9 @@ namespace HarvardShuttle
 
             Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap;
             routeMap = await MainDataStore.GetRoutes(currOrigin, currDest);
+            commonRouteIDsColors = new Dictionary<string, string>();
+            foreach (var key in routeMap.Keys)
+                commonRouteIDsColors[key] = routeMap[key].Item2;
 
             // if there are no routes, hide map and color code, replace with message that there are no routes currently running
             if (routeMap.Keys.Count == 0) {
@@ -118,11 +123,13 @@ namespace HarvardShuttle
             // update color codes on UI
 
             // plot shuttles
-            AddShuttles(routeMap);
+            List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
+            AddShuttles(shuttleLocs);
             // make background task to plot shuttles every 1-2 seconds
 
             FadeInMap();
 
+            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateShuttles, TimeSpan.FromMilliseconds(2500));
         }
 
         private bool EstimatedWaitGreaterThanScheduledWait()
@@ -154,21 +161,33 @@ namespace HarvardShuttle
             story.Begin();
         }
 
-        private async void AddShuttles(Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap)
+        private void AddShuttles(List<Tuple<string, Location>> shuttleLocs)
         {
-            List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(routeMap.Keys.ToList<string>());
             foreach (var derp in shuttleLocs) {
                 BigPushPin p = new BigPushPin();
-                string routeColor = routeMap[derp.Item1].Item2;
+                string routeColor = commonRouteIDsColors[derp.Item1];
                 byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
                 byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
                 byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
                 p.SetBackground(new SolidColorBrush(Color.FromArgb(255, r, g, b)));
 
-                MapLayer.SetPositionAnchor(p, new Point(23/2, 33/2));
+                MapLayer.SetPositionAnchor(p, new Point(23 / 2, 33 / 2));
                 MapLayer.SetPosition(p, derp.Item2);
                 shuttleMap.Children.Add(p);
             }
+        }
+
+        private async void UpdateShuttles(ThreadPoolTimer timer)
+        {
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, async () => {
+                List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
+                var crap = shuttleMap.Children.ToList<UIElement>();
+                foreach (var derp in crap) {
+                    if (derp.GetType() == typeof(BigPushPin))
+                        shuttleMap.Children.Remove(derp);
+                }
+                AddShuttles(shuttleLocs);
+            });
         }
 
         private void MakePolylines(Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap)
@@ -224,8 +243,8 @@ namespace HarvardShuttle
                         MapShapeLayer shapeLayer = new MapShapeLayer();
                         MapPolyline polyline = new MapPolyline();
                         polyline.Locations = locCollection;
-                        polyline.Color = Color.FromArgb(150, r, g, b);
-                        polyline.Width = 7;
+                        polyline.Color = Color.FromArgb(180, r, g, b);
+                        polyline.Width = 8;
                         shapeLayer.Shapes.Add(polyline);
                         shuttleMap.ShapeLayers.Add(shapeLayer);
                     }
@@ -242,8 +261,8 @@ namespace HarvardShuttle
                     MapShapeLayer shapeLayer = new MapShapeLayer();
                     MapPolyline polyline = new MapPolyline();
                     polyline.Locations = locCollection;
-                    polyline.Color = Color.FromArgb(150, r, g, b);
-                    polyline.Width = 7;
+                    polyline.Color = Color.FromArgb(180, r, g, b);
+                    polyline.Width = 8;
                     shapeLayer.Shapes.Add(polyline);
                     shuttleMap.ShapeLayers.Add(shapeLayer);
 
