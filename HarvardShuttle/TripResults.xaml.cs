@@ -66,31 +66,44 @@ namespace HarvardShuttle
             UpdateFavoritesCache(currOrigin, currDest);
 
             this.pageTitle.Text = "Trip Results";
+            UpdateOriginDest(currOrigin, currDest);
             this.estimateBox.Text = await Task<string>.Run(() => MainDataStore.GetArrivalEstimates(currOrigin, currDest));
             this.estimatedMinutesTextBlock.Text = "minutes";
-            UpdateOriginDest(currOrigin, currDest);
 
             // Update the schedule asynchronously
-            DataStore.Scheduler.CreateNewSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
+            DataStore.Scheduler.CreateSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
 
             // Register the background task
             if (GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Denied &&
                 GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Unspecified)
                 RegisterBackgroundTask();
 
-
-            Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap;
             if (estimateBox.Text != "") {
                 // if boardingTime > scheduledTime, changed boarding box to say "Probably leaving in (may need to span more columns)
-                // Get Routes (returns routes shared between origin and dest that are active, mapped to tuple of color, name and list of segments)
-                routeMap = await MainDataStore.GetRoutes(currOrigin, currDest);
+                if (EstimatedWaitGreaterThanScheduledWait()) {
+                    this.boardingTextBlock.Visibility = Visibility.Collapsed;
+                    this.realEstimateTextBlock.Text = "Will probably arrive in";
+                    this.realEstimateTextBlock.Visibility = Visibility.Visible;
+                }
+                else {
+                    // Get Routes (returns routes shared between origin and dest that are active, mapped to tuple of color, name and list of segments)
+                    this.boardingTextBlock.Visibility = Visibility.Visible;
+                }
             }
             else {
-                // "No estimate for boarding time" (may need to span more columns)
-                // make invisible estimateBox, estimateMinutesBox
-                // get all routes
-                routeMap = await MainDataStore.GetRoutes("", "");
+                this.boardingTextBlock.Visibility = Visibility.Collapsed;
+                this.estimateBox.Visibility = Visibility.Collapsed;
+                this.estimatedMinutesTextBlock.Visibility = Visibility.Collapsed;
+                //this.realEstimateTextBlock.Visibility = Visibility.Visible;
+                //routeMap = await MainDataStore.GetRoutes("", "");
+                this.shuttleMap.Visibility = Visibility.Collapsed;
+                this.notRunningTextBlock.Visibility = Visibility.Visible;
+                this.notRunningTextBlock2.Visibility = Visibility.Visible;
+                return;
             }
+
+            Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap;
+            routeMap = await MainDataStore.GetRoutes(currOrigin, currDest);
 
             // if there are no routes, hide map and color code, replace with message that there are no routes currently running
             if (routeMap.Keys.Count == 0) {
@@ -108,7 +121,28 @@ namespace HarvardShuttle
             AddShuttles(routeMap);
             // make background task to plot shuttles every 1-2 seconds
 
-            // Fade the map in
+            FadeInMap();
+
+        }
+
+        private bool EstimatedWaitGreaterThanScheduledWait()
+        {
+            string estimateUnits = this.estimatedMinutesTextBlock.Text;
+            string scheduledUnits = this.minutesTextBlock.Text;
+
+            if (estimateUnits == "minutes" && scheduledUnits == "hours")
+                return false;
+            if (estimateUnits == "hours" && scheduledUnits == "minutes")
+                return true;
+
+            double estimate = Double.Parse(this.estimateBox.Text);
+            double scheduled = Double.Parse(this.numMinutesTextBlock.Text);
+            
+            return (estimate > scheduled);
+        }
+
+        private void FadeInMap()
+        {
             Storyboard story = new Storyboard();
             DoubleAnimation anim = new DoubleAnimation();
             anim.Duration = TimeSpan.FromMilliseconds(1100);
@@ -122,7 +156,7 @@ namespace HarvardShuttle
 
         private async void AddShuttles(Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap)
         {
-            List<Tuple<string, Location>> shuttleLocs = await APIDataStore.GetShuttles(routeMap.Keys.ToList<string>());
+            List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(routeMap.Keys.ToList<string>());
             foreach (var derp in shuttleLocs) {
                 BigPushPin p = new BigPushPin();
                 string routeColor = routeMap[derp.Item1].Item2;

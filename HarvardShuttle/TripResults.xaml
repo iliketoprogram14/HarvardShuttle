@@ -36,7 +36,8 @@
             <RowDefinition Height="140"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="2*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="16*"/>
@@ -279,9 +280,14 @@
             <TextBlock x:Name="pageTitle" Grid.Column="1" Text="{StaticResource AppName}" Style="{StaticResource PageHeaderTextStyle}"/>
         </Grid>
 
+        <Viewbox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" VerticalAlignment="Bottom" HorizontalAlignment="Right" >
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,27">
+                <TextBlock x:Name="realEstimateTextBlock"  HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="Wrap" Text="No estimate for boarding time." VerticalAlignment="Bottom" FontSize="20" Visibility="Collapsed"/>
+            </StackPanel>
+        </Viewbox>
         <Viewbox Grid.Row="1" Grid.Column="2" VerticalAlignment="Bottom" HorizontalAlignment="Right">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,27">
-                <TextBlock x:Name="boardingTextBlock"  HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="Wrap" Text="Boarding in" VerticalAlignment="Bottom" FontSize="20"/>
+                <TextBlock x:Name="boardingTextBlock"  HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="Wrap" Text="Boarding in" VerticalAlignment="Bottom" FontSize="20" Visibility="Collapsed"/>
             </StackPanel>
         </Viewbox>
         <Viewbox Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Bottom" >
@@ -307,7 +313,9 @@
             <TextBlock x:Name="minutesTextBlock"  Margin="5,0,0,12" TextWrapping="Wrap" Text="" />
         </Viewbox>
 
-        <ListView  Grid.Row="3" Grid.Column="4" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,30,0,0" x:Name="ResultsList" IsDoubleTapEnabled="False" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" FontSize="30" >
+        <ListView  Grid.Row="3" Grid.RowSpan="2" Grid.Column="4" Grid.ColumnSpan="3" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,30,0,0" 
+                   x:Name="ResultsList" IsDoubleTapEnabled="False" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" 
+                   FontSize="30" ScrollViewer.VerticalScrollBarVisibility="Visible">
             <!--<ListViewItem FontSize="20"></ListViewItem>-->
         </ListView>
 
@@ -321,8 +329,18 @@
                 <TextBlock x:Name="destTextBlock"  HorizontalAlignment="Left" Margin="0,15,0,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" FontSize="40"/>
             </StackPanel>
         </Viewbox>
-        <Viewbox Name="MapCanvas" Margin="0,0,0,50" Grid.Row="2" Grid.Column="0" Grid.RowSpan="2" VerticalAlignment="Top" HorizontalAlignment="Center">
-            <ScrollViewer>
+
+        <Viewbox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="1" Grid.RowSpan="3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,0">
+            <StackPanel >
+                <TextBlock x:Name="notRunningTextBlock"  HorizontalAlignment="Center" Margin="50,0,50,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="40"
+                           Text="There are currently " Visibility="Collapsed" />
+                <TextBlock x:Name="notRunningTextBlock2"  HorizontalAlignment="Center" Margin="50,30,50,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="40"
+                           Text="no running routes at this time." Visibility="Collapsed"/>
+            </StackPanel>
+        </Viewbox>
+
+        <Viewbox Name="MapCanvas" Margin="0,0,0,50" Grid.Row="2" Grid.Column="0" Grid.RowSpan="3" VerticalAlignment="Top" HorizontalAlignment="Center">
+            <ScrollViewer VerticalScrollMode="Disabled" ZoomMode="Disabled" IsDoubleTapEnabled="False" IsHoldingEnabled="False" IsRightTapEnabled="False" IsTapEnabled="False" VerticalScrollBarVisibility="Hidden">
                 <Grid>
                     <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Width="1000" Height="1060" Stroke="Black" VerticalAlignment="Top" Canvas.ZIndex="1" Opacity="0" />
                     <Maps:Map Name="shuttleMap" Credentials="AhYTEH1C_7wVcn9raY0Lw0wVxc4GAySSK2ZgvXhwvpvzxjfPcWNwllRu3001Rasf" HorizontalAlignment="Center" 

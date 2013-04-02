@@ -25,15 +25,16 @@ namespace DataStore
         private static int maxListings = 30;
         private static int maxNotifications = 15;
 
-        public static void CreateSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock numMinutes, TextBlock units)
+        public async static void CreateSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock numMinutes, TextBlock units)
         {
-            CallService(new_origin, new_dest, results, numMinutes, units);
+            await CallService(new_origin, new_dest, results, numMinutes, units);
             results.Height = (results.Items.Count * 20 < height) ?
                 results.Items.Count * 20 : height;
+            results.FontSize = 40;
             UpdateLastOriginDest(new_origin, new_dest);
         }
 
-        public async static void CreateExtendedSchedule()
+        public async static Task CreateExtendedSchedule()
         {
             StorageFile file = await ApplicationData.Current.LocalFolder.GetFileAsync(store);
             string storeXml = await FileIO.ReadTextAsync(file);
@@ -43,17 +44,45 @@ namespace DataStore
             string origin = doc.GetElementsByTagName("origin")[0].InnerText;
             string dest = doc.GetElementsByTagName("dest")[0].InnerText;
 
-            CallService(origin, dest, null, null, null);
+            Task.WaitAll(CallService(origin, dest, null, null, null));
+        }
+        
+        private static int GetNewMinuteCountdown(string timeStr)
+        {
+            string[] time = timeStr.Split(':');
+            int departMin = Convert.ToInt32(time[1]);
+            int departHour = Convert.ToInt32(time[0]);
+
+            int minuteCountdown = departHour * 60 + departMin - (DateTime.Now.TimeOfDay.Hours * 60 + DateTime.Now.TimeOfDay.Minutes);
+            if (minuteCountdown < 0) minuteCountdown = (24 * 60) + minuteCountdown;
+
+            return minuteCountdown;
+        }
+        
+        private async static void UpdateLastOriginDest(string new_origin, string new_dest)
+        {
+            string xml = "<last_trip>";
+            xml += "<origin>" + new_origin + "</origin>";
+            xml += "<dest>" + new_dest + "</dest>";
+            xml += "</last_trip>";
+
+            bool fileExists = true;
+            StorageFile file = null;
+            try {
+                file = await ApplicationData.Current.LocalFolder.GetFileAsync(store);
+            }
+            catch (Exception) {
+                fileExists = false;
+            }
+            if (!fileExists)
+                file = await ApplicationData.Current.LocalFolder.CreateFileAsync(store, CreationCollisionOption.ReplaceExisting);
+
+            await FileIO.WriteTextAsync(file, xml);
         }
 
-
-        public async static void CreateNewSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock numMinutes, TextBlock units)
+        private async static Task CallService(string origin, string dest, ListView results, TextBlock numMinutes, TextBlock units)
         {
-            // get intersection of routes between origin and dest
-            //Tuple<string, string, IEnumerable<string>> routes_and_ids = await APIDataStore.GetCommonRoutesAndStopIds(new_origin, new_dest);
-
-            // for each of those routes, grab the next 20 trips
-            List<string> times = await MainDataStore.GetTimes(20, new_origin, new_dest);
+            List<string> times = await MainDataStore.GetTimes(20, origin, dest);
             // write the first trip to the textblock
             // update the resultsList and its height
 
@@ -77,107 +106,14 @@ namespace DataStore
 
                 // add tile notifications
                 if (numNotifications <= maxNotifications)
-                    numNotifications = AddTileNotifications(minuteCountdown, numNotifications, new_origin, new_dest, updater);
-
-                if (numListings > maxListings)
-                    break;
-            }
-
-            if (results.Items.Count == 0) {
-                results.Items.Add("No further times scheduled.");
-            }
-        }
-
-
-
-        private static int GetNewMinuteCountdown(string timeStr)
-        {
-            string[] time = timeStr.Split(':');
-            int departMin = Convert.ToInt32(time[1]);
-            int departHour = Convert.ToInt32(time[0]);
-
-            int minuteCountdown = departHour * 60 + departMin - (DateTime.Now.TimeOfDay.Hours * 60 + DateTime.Now.TimeOfDay.Minutes);
-            if (minuteCountdown < 0) minuteCountdown = (24 * 60) + minuteCountdown;
-
-            return minuteCountdown;
-        }
-
-
-
-
-
-
-
-
-        private async static void UpdateLastOriginDest(string new_origin, string new_dest)
-        {
-            string xml = "<last_trip>";
-            xml += "<origin>" + new_origin + "</origin>";
-            xml += "<dest>" + new_dest + "</dest>";
-            xml += "</last_trip>";
-
-            bool fileExists = true;
-            StorageFile file = null;
-            try {
-                file = await ApplicationData.Current.LocalFolder.GetFileAsync(store);
-            }
-            catch (Exception) {
-                fileExists = false;
-            }
-            if (!fileExists)
-                file = await ApplicationData.Current.LocalFolder.CreateFileAsync(store, CreationCollisionOption.ReplaceExisting);
-
-            await FileIO.WriteTextAsync(file, xml);
-        }
-
-        private async static void CallService(string origin, string dest, ListView resultsList, TextBlock numMinutes, TextBlock units)
-        {
-            string url = "http://shuttleboy.cs50.net/api/1.2/trips?a=" + origin +
-                "&b=" + dest + "&output=json";
-            TileUpdater updater = CreateNewTileUpdater();
-
-            // get the next countdown from Shuttleboy
-            int minuteCountdown = 0;
-            int numNotifications = 0;
-            int numListings = 0;
-
-            if (!IsThereInternet()) {
-                resultsList.Items.Add("No internet connection available.");
-                resultsList.Items.Add("Please check your network connection and retry finding a trip.");
-                return;
-            }
-
-            var client = new System.Net.Http.HttpClient();
-            HttpResponseMessage response = client.GetAsync(url).Result;
-
-            string responseString = await response.Content.ReadAsStringAsync();
-            responseString = "{\"trips\": " + responseString + "}";
-            JsonObject obj = JsonObject.Parse(responseString);
-
-            foreach (JsonValue val in obj["trips"].GetArray()) {
-                JsonObject trip = val.GetObject();
-
-                minuteCountdown = GetMinuteCountdown(trip["departs"].GetString());
-
-                // add listings to main UI
-                if (resultsList != null) {
-                    if (numNotifications == 0)
-                        SetCountdownBox(numMinutes, units, minuteCountdown);
-                    else
-                        AddListing(minuteCountdown, resultsList);
-                    numListings++;
-                }
-
-                // add tile notifications
-                if (numNotifications <= maxNotifications)
                     numNotifications = AddTileNotifications(minuteCountdown, numNotifications, origin, dest, updater);
 
                 if (numListings > maxListings)
                     break;
             }
 
-            if (resultsList.Items.Count == 0) {
-                resultsList.Items.Add("No further times scheduled.");
+            if (results != null && results.Items.Count == 0) {
+                results.Items.Add("No further times scheduled.");
             }
         }
 
