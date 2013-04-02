@@ -101,7 +101,6 @@
   <ItemGroup>
     <Compile Include="LiveTileUpdater.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Scheduler.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ClassLibrary1\DataStore.csproj">
