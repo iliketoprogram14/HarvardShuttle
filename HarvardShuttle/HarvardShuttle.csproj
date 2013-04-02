@@ -118,6 +118,9 @@
       <DependentUpon>Destination.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainItemTemplateSelector.cs" />
+    <Compile Include="BigPushPin.xaml.cs">
+      <DependentUpon>BigPushPin.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DataModel\DataSource.cs" />
     <Compile Include="Common\BindableBase.cs" />
@@ -185,6 +188,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Destination.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="BigPushPin.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

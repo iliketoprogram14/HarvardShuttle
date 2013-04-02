@@ -190,7 +190,7 @@ def writeRoute(writer, lines, route_ids, fixed_names):
                     special_activated = True
                     continue
                 writer.beginObj()
-                val = "Fri,Sat" if special_activated else "Sun,Mon,Tue,Wed,Thur,Fri,Sat"
+                val = "Sat,Sun" if special_activated else "Sun,Mon,Tue,Wed,Thur,Fri,Sat"
                 writer.writeKeyVal("special", val, True)
             else:
                 print "FALSE SPECIAL CASE " + title

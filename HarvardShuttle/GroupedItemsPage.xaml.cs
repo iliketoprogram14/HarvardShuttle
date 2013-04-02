@@ -67,7 +67,7 @@ namespace HarvardShuttle
             //if (asyncStatus == BackgroundAccessStatus.Unspecified)
             //    asyncStatus = await BackgroundExecutionManager.RequestAccessAsync();
 
-            APIDataStore.InitDataStore(DataSource.GetGroup("Group-1").Items.ToList());
+            //APIDataStore.InitDataStore(DataSource.GetGroup("Group-1").Items.ToList());
         }
 
         private async Task InitFavoritesStore()

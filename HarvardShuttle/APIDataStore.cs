@@ -31,71 +31,132 @@ namespace HarvardShuttle
 {
     public class APIDataStore
     {
-        private static string storePath = "db.json";
-        private static string dataStorePath = "api_data_store.xml";
-        public static StorageFolder localFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
         private static string agency = "52";
+        private static string cache = "";
+        private static string storePath = "db.json";
+        private static string storeFolder = "DataSource";
         private static StorageFolder installLoc = Windows.ApplicationModel.Package.Current.InstalledLocation;
 
             
-        private class TimeObj 
+        private class TimeDictionary 
         {
             private string originID, destID;
             private int currTimeInt;
+            private int origTimeInt;
             private string currTime;
+            private string currDay;
             private SortedDictionary<int, List<Tuple<string, JsonObject>>> timeDict;
 
-            public TimeObj(string originID, string destID) {
+            public TimeDictionary(string originID, string destID) {
                 this.originID = originID;
                 this.destID = destID;
                 var hr = DateTime.Now.Hour;
                 var min = DateTime.Now.Minute;
+                var derp = DateTime.Now.DayOfWeek;
+                var fack = derp.ToString().Substring(0, 3);
+                currDay = fack;
                 currTimeInt = hr * 60 + min;
+                origTimeInt = currTimeInt;
                 currTime = hr.ToString() + ":" + min.ToString();
                 timeDict = new SortedDictionary<int,List<Tuple<string,JsonObject>>>();
             }
 
-            public void AddObj(JsonObject obj) {
+            private string NextDay(string day)
+            {
+                string nextDay = "";
+                switch (day) {
+                    case "Sun": nextDay = "Mon"; break;
+                    case "Mon": nextDay = "Tue"; break;
+                    case "Tue": nextDay = "Wed"; break;
+                    case "Wed": nextDay = "Thu"; break;
+                    case "Thu": nextDay = "Fri"; break;
+                    case "Fri": nextDay = "Sat"; break;
+                    case "Sat": nextDay = "Sun"; break;
+                }
+                return nextDay;
+            }
+
+            private bool AddCountdown(JsonObject obj, string day, bool secLoop)
+            {
+                int daysCanChangeInt = Int32.Parse(obj["days_change"].GetString());
+                bool daysCanChange = (daysCanChangeInt == 1);
+                string name = obj["name"].GetString();
+                int minCountdown = 24 * 60;
+                string minTime = "";
+                int minTimeInt = 0;
+
                 // find next time
                 foreach (JsonValue val in obj["trips"].GetArray()) {
                     JsonObject tripObj = val.GetObject();
-                    string name = obj["name"].GetString();
+
+                    // if days can change, check that this trip can happen today
+                    if (daysCanChange) {
+                        string tripDays = tripObj["special"].GetString();
+                        if (!tripDays.Contains(day))
+                            continue;
+                    }
+                                        
+                    // grab the next time for today
                     string time = tripObj[originID].GetString();
                     if (time == "") continue;
                     var fields = time.Split(':');
                     var hr = Int32.Parse(fields[0]);
+                    if (secLoop || (hr < 5 && currTimeInt > 300))
+                        hr += 24;
                     var min = Int32.Parse(fields[1]);
                     int timeInt = hr * 60 + min;
+                    int countdown = timeInt - currTimeInt;
+                    int countdownFromOrig = timeInt - origTimeInt;
 
-                    // add it in when we find it
-                    if (timeInt > currTimeInt) {
-                        List<Tuple<string, JsonObject>> derp = new List<Tuple<string,JsonObject>>();
-                        if (timeDict.ContainsKey(timeInt))
-                            derp = timeDict[timeInt];
-                        derp.Add(Tuple.Create<string, JsonObject>(time, obj));
-                        timeDict[timeInt] = derp;
-                        break;
+                    // update the min if we have a new min
+                    if (countdown < minCountdown && countdown > 0) {
+                        minTimeInt = timeInt;
+                        minCountdown = countdown;
+                        minTime = time;
                     }
                 }
+                if (minCountdown < 24 * 60) {
+                    List<Tuple<string, JsonObject>> derp = new List<Tuple<string, JsonObject>>();
+                    int countdownFromOrig = minTimeInt - origTimeInt;
+                    if (timeDict.ContainsKey(countdownFromOrig))
+                        derp = timeDict[countdownFromOrig];
+                    derp.Add(Tuple.Create<string, JsonObject>(minTime, obj));
+                    timeDict[countdownFromOrig] = derp;
+                    return true;
+                }
+
+
+                return false;
+            }
+
+            public void AddObj(JsonObject obj) {
+                if (AddCountdown(obj, currDay, false))
+                    return;
+                string nextDay = NextDay(currDay);
+                AddCountdown(obj, nextDay, true);
             }
 
             public string PopAndUpdate() {
-                int nextTimeInt = 0;
+                int countdown = 0;
                 string nextTimeStr = "";
                 JsonObject routeObj = new JsonObject();
                 foreach (var derp in timeDict) {
-                    nextTimeInt = derp.Key;
+                    countdown = derp.Key;
                     List<Tuple<string, JsonObject>> blegh = derp.Value;
                     var firstTuple = blegh[0];
                     nextTimeStr = firstTuple.Item1;
                     routeObj = firstTuple.Item2;
                     blegh.RemoveAt(0);
                     if (blegh.Count == 0)
-                        timeDict.Remove(nextTimeInt);
+                        timeDict.Remove(countdown);
                     else
-                        timeDict[nextTimeInt] = blegh;
+                        timeDict[countdown] = blegh;
                     break;
                 }
+                var fields = nextTimeStr.Split(':');
+                var hr = Int32.Parse(fields[0]);
+                var min = Int32.Parse(fields[1]);
+                int nextTimeInt = hr * 60 + min;
                 currTimeInt = nextTimeInt;
                 currTime = nextTimeStr;
                 AddObj(routeObj);
@@ -103,165 +164,29 @@ namespace HarvardShuttle
             }
         }
 
-        #region Store Initialization
-        public async static void InitDataStore(List<DataItem> items)
+        private static async Task<string> RefreshCache()
         {
-            bool fileExists = true;
-            try {
-                StorageFile file = await localFolder.GetFileAsync(dataStorePath);
+            if (cache == "") {
+                var folder = await installLoc.GetFolderAsync(storeFolder);
+                StorageFile f = await folder.GetFileAsync(storePath);
+                cache = await FileIO.ReadTextAsync(f);
             }
-            catch (Exception) {
-                fileExists = false;
-            }
-
-            if (!fileExists) {
-                string stopsAndRoutes = await GetStopsAndRoutes(items);
-                string xml = "<api_store>" + stopsAndRoutes + "</api_store>";
-                StorageFile file = await localFolder.CreateFileAsync(dataStorePath, CreationCollisionOption.ReplaceExisting);
-                await FileIO.WriteTextAsync(file, xml);
-            }
+            return cache;
         }
 
-        private async static Task<string> GetStopsAndRoutes(List<DataItem> items)
+        private async static Task<JsonObject> GetSegments()
         {
-            // Download stops and get json response
-            string url = "http://api.transloc.com/1.1/stops.json?agencies=" + agency;
+            string url = "http://api.transloc.com/1.1/segments.json?agencies=" + agency;
             var client = new System.Net.Http.HttpClient();
             HttpResponseMessage response = client.GetAsync(url).Result;
             string responseString = await response.Content.ReadAsStringAsync();
             JsonObject obj = JsonObject.Parse(responseString);
 
-            // Init data structures
-            List<string> titles = new List<string>(); // list of titles for items
-            foreach (DataItem item in items)
-                titles.Add(item.Title);
+            Dictionary<string, List<Location>> segmentMap = new Dictionary<string, List<Location>>();
 
-            Dictionary<string, string> cs50NameMap = await GetCS50Names(titles); // maps titles to cs50 names
-            Dictionary<string, string> routeMap = new Dictionary<string, string>(); // maps routes to stops
+            JsonObject segmentArr = obj["data"].GetObject();
 
-            // Parse json string into an xml list of stops
-            string xml = "<stops>";
-            foreach (JsonValue stop in obj["data"].GetArray()) {
-                var stopObj = stop.GetObject();
-
-                // Get the title for the current transloc item
-                string currTitle = "Nothing :(";
-                int idx = titles.IndexOf(stopObj["name"].GetString().Replace("& ", ""));
-                if (idx != -1)
-                    currTitle = titles[idx];
-                else if (stopObj["name"].GetString().Contains("ilab"))
-                    currTitle = "i-Lab";
-                else
-                    continue; // if there's a transloc location that's not in titles, skip it
-
-                // Create the xml for the stop
-                //id='" + stopObj["stop_id"].GetString() + "'>";
-                xml += "<stop s_id='" + stopObj["stop_id"].GetString() + "'>";
-                xml += "<title>" + currTitle + "</title>";
-                xml += "<cs50name>" + cs50NameMap[currTitle] + "</cs50name>";
-                //xml += "<transloc_name>" + stopObj["name"].GetString() + "</transloc_name>";
-                // Construct this destination's routes and populate the routeMap at the same time
-                xml += "<stop_routes>";
-                foreach (JsonValue routeVal in stopObj["routes"].GetArray()) {
-                    string route = routeVal.GetString();
-                    xml += route + ",";
-                    routeMap = UpdateRouteMap(routeMap, route, stopObj["stop_id"].GetString());
-                }
-                xml = xml.Remove(xml.Length - 1, 1); // remove last comma
-                xml += "</stop_routes>";
-                xml += "</stop>";
-            }
-            xml += "</stops>";
-
-            xml += WriteRoutes(routeMap);
-            return xml;
-        }
-
-        private async static Task<Dictionary<string, string>> GetCS50Names(List<string> titles)
-        {
-            string url = "http://shuttleboy.cs50.net/api/1.2/stops?output=json";
-            var client = new System.Net.Http.HttpClient();
-            HttpResponseMessage response = client.GetAsync(url).Result;
-
-            // get json response
-            string responseString = await response.Content.ReadAsStringAsync();
-            responseString = "{\"stops\": " + responseString + "}";
-            JsonObject obj = JsonObject.Parse(responseString);
-
-            // add titles to list of strings
-            List<string> cs50Stops = new List<string>();
-            JsonArray arr = obj["stops"].GetArray();
-            foreach (JsonValue stop in arr) {
-                var stopObj = stop.GetObject();
-                cs50Stops.Add(stopObj["stop"].GetString());
-            }
-
-            // map titles to cs50 titles
-            Dictionary<string, string> cs50Map = new Dictionary<string, string>();
-            foreach (string title in titles) {
-                if (cs50Stops.Contains(title)) {
-                    cs50Map.Add(title, title);
-                    continue;
-                }
-                switch (title) {
-                    case "Kennedy School":
-                        if (cs50Stops.Contains("HKS")) {
-                            cs50Map.Add(title, "HKS");
-                            continue;
-                        }
-                        break;
-                    case "Law School":
-                        if (cs50Stops.Contains("Pound Hall")) {
-                            cs50Map.Add(title, "Pound Hall");
-                            continue;
-                        }
-                        break;
-                }
-                cs50Map.Add(title, "Nothing!!!");
-            }
-            return cs50Map;
-        }
-
-        private static Dictionary<string, string> UpdateRouteMap(Dictionary<string, string> routeMap, string route, string stop_id)
-        {
-            string dests = (routeMap.ContainsKey(route)) ? routeMap[route] : "";
-            dests += stop_id + ",";
-            routeMap[route] = dests;
-            return routeMap;
-        }
-
-        private static string WriteRoutes(Dictionary<string, string> routeMap)
-        {
-            string xml = "<routes>";
-            foreach (var route in routeMap.Keys) {
-                string dests = routeMap[route];
-                dests = dests.Remove(dests.Length - 1, 1);
-                xml += "<route r_id='" + route + "'>" + dests + "</route>";
-            }
-            xml += "</routes>";
-            return xml;
-        }
-        #endregion
-
-        public static async Task<Tuple<string, string>> GetCS50Names(string origin, string dest)
-        {
-            StorageFile file = await localFolder.GetFileAsync(dataStorePath);
-            string xml = await FileIO.ReadTextAsync(file);
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(xml);
-
-            string origin_cs50name = "", dest_cs50name = "";
-            foreach (XmlElement elem in doc.GetElementsByTagName("stop")) {
-                string title = elem.GetElementsByTagName("title")[0].InnerText;
-                if (title == origin)
-                    origin_cs50name = elem.GetElementsByTagName("cs50name")[0].InnerText;
-                else if (title == dest)
-                    dest_cs50name = elem.GetElementsByTagName("cs50name")[0].InnerText;
-                if (origin_cs50name != "" && dest_cs50name != "")
-                    break;
-            }
-
-            return Tuple.Create<string, string>(origin_cs50name, dest_cs50name);
+            return segmentArr;
         }
 
         public async static Task<DataGroup> GetDestinations(string origin)
@@ -274,28 +199,31 @@ namespace HarvardShuttle
             List<string> originRoutes = new List<string>();
 
             // Grab the API data store
-            StorageFile file = await localFolder.GetFileAsync(dataStorePath);
-            string xml = await FileIO.ReadTextAsync(file);
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(xml);
+            string store = await RefreshCache();
+            JsonObject obj = JsonObject.Parse(store);
+            JsonArray stops = obj["stops"].GetArray();
+            JsonArray routes = obj["routes"].GetArray();
 
             // Grab the routes of the origin, and populate idToTitle for everything
-            foreach (XmlElement elem in doc.GetElementsByTagName("stop")) {
-                string stopId = elem.GetAttribute("s_id");
-                string stopName = elem.GetElementsByTagName("title")[0].InnerText;
+            foreach (JsonValue val in stops) {
+                JsonObject stop = val.GetObject();
+                string stopId = stop["id"].GetString();
+                string stopName = stop["title"].GetString();
                 if (stopName == origin) {
-                    originRoutes = elem.GetElementsByTagName("stop_routes")[0].InnerText.ToString().Split(',').ToList<string>();
+                    foreach (JsonValue routeVal in stop["routes"].GetArray())
+                        originRoutes.Add(routeVal.GetString());
                 }
                 idToTitle[stopId] = stopName;
             }
 
             // Grab all the stops that share routes with the origin
-            foreach (XmlElement elem in doc.GetElementsByTagName("route")) {
-                string route_id = elem.GetAttribute("r_id");
+            foreach (JsonValue val in routes) {
+                JsonObject routeObj = val.GetObject();
+                string route_id = routeObj["id"].GetString();
                 if (!originRoutes.Contains(route_id))
                     continue;
-                List<string> stop_ids = elem.InnerText.Split(',').ToList<string>();
-                foreach (string stop_id in stop_ids) {
+                foreach (JsonValue stop_val in routeObj["stops"].GetArray()) {
+                    string stop_id = stop_val.GetString();
                     string stopTitle = idToTitle[stop_id];
                     if (!destSet.Contains(stopTitle) && stopTitle != origin)
                         destSet.Add(stopTitle);
@@ -412,61 +340,10 @@ namespace HarvardShuttle
             return routeMap;
         }
 
-        private async static Task<JsonObject> GetSegments()
-        {
-            string url = "http://api.transloc.com/1.1/segments.json?agencies=" + agency;
-            var client = new System.Net.Http.HttpClient();
-            HttpResponseMessage response = client.GetAsync(url).Result;
-            string responseString = await response.Content.ReadAsStringAsync();
-            JsonObject obj = JsonObject.Parse(responseString);
-
-            Dictionary<string, List<Location>> segmentMap = new Dictionary<string, List<Location>>();
-
-            JsonObject segmentArr = obj["data"].GetObject();
-
-            return segmentArr;
-        }
-
-        private async static Task<Tuple<string, string, IEnumerable<string>>> GetCommonRoutesAndStopIds(string origin, string dest)
+        public async static Task<Tuple<string, string, IEnumerable<string>>> GetCommonRoutesAndStopIds(string origin, string dest)
         {
             // Grab the API data store
-            StorageFile file = await localFolder.GetFileAsync(dataStorePath);
-            string xml = await FileIO.ReadTextAsync(file);
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(xml);
-
-            // Get ids of origin and dest and common routes
-            string originID = "";
-            string destID = "";
-            List<string> origin_routes = new List<string>();
-            List<string> dest_routes = new List<string>();
-            foreach (XmlElement elem in doc.GetElementsByTagName("stop")) {
-                string stopName = elem.GetElementsByTagName("title")[0].InnerText;
-                if (stopName == origin) {
-                    originID = elem.GetAttribute("s_id");
-                    origin_routes = elem.GetElementsByTagName("stop_routes")[0].InnerText.Split(',').ToList<string>();
-                }
-                else if (stopName == dest) {
-                    destID = elem.GetAttribute("s_id");
-                    dest_routes = elem.GetElementsByTagName("stop_routes")[0].InnerText.Split(',').ToList<string>();
-                }
-                if (originID != "" && destID != "")
-                    break;
-            }
-            IEnumerable<string> common_routes = origin_routes.Intersect<string>(dest_routes);
-
-            return Tuple.Create<string, string, IEnumerable<string>>(originID, destID, common_routes);
-        }
-
-
-
-
-        public async static Task<Tuple<string, string, IEnumerable<string>>> _GetCommonRoutesAndStopIds(string origin, string dest)
-        {
-            // Grab the API data store
-            var folder = await installLoc.GetFolderAsync("DataSource");
-            StorageFile f = await folder.GetFileAsync("db.json");
-            string store = await FileIO.ReadTextAsync(f);
+            string store = await RefreshCache();
             JsonObject obj = JsonObject.Parse(store);
             JsonArray stops = obj["stops"].GetArray();
 
@@ -497,55 +374,64 @@ namespace HarvardShuttle
             return Tuple.Create<string, string, IEnumerable<string>>(originID, destID, common_routes);
         }
 
-
         public async static Task<List<string>> GetTimes(int num, string origin, string dest) 
         {
-            Tuple<string, string, IEnumerable<string>> routes_and_ids = await APIDataStore._GetCommonRoutesAndStopIds(origin, dest);
+            Tuple<string, string, IEnumerable<string>> routes_and_ids = await APIDataStore.GetCommonRoutesAndStopIds(origin, dest);
             string originID = routes_and_ids.Item1;
             string destID = routes_and_ids.Item2;
             List<string> routes = routes_and_ids.Item3.ToList<string>();
 
             // Grab the data store
-            var folder = await installLoc.GetFolderAsync("DataSource");
-            StorageFile f = await folder.GetFileAsync("db.json");
-            string store = await FileIO.ReadTextAsync(f);
+            string store = await RefreshCache();
             JsonObject obj = JsonObject.Parse(store);
             JsonArray routeJson = obj["routes"].GetArray();
 
             // Grab only the route objects you need
-            //string currTime = "";
-            List<JsonObject> routeObjList = new List<JsonObject>();
-            //Dictionary<string, Tuple<JsonObject, string>> routeDict = new Dictionary<string,Tuple<JsonObject,string>>();
-            TimeObj timeDict = new TimeObj(originID, destID);
+            TimeDictionary timeDict = new TimeDictionary(originID, destID);
             foreach (JsonValue routeVal in routeJson) {
                 JsonObject routeObj = routeVal.GetObject();
                 if (routes.Contains(routeObj["id"].GetString())) {
-                    routeObjList.Add(routeObj);
                     timeDict.AddObj(routeObj);
-                    //routeDict[routeObj["id"].GetString()] = Tuple.Create<JsonObject, string>(routeObj, nextTime(routeObj, originID, destID, currTime));
                 }
             }
 
-
-            /* POPULATE DICTIONARY (ID -> NEXT TIME)
-             * grab next time and update the key in the dictionary that just lost its time
-             * dict[id] = nextTime(routeObj, originID, destID, prevTime)
-             * */
-
-
             // Create an ordered list of times
-            int numRoutesCollected = 0;
             List<string> times = new List<string>();
             while (times.Count < num) {
                 string nextTime = timeDict.PopAndUpdate();
                 times.Add(nextTime);
             }
 
-
             return times;
         }
 
-        
+        public async static Task<List<Tuple<string, Location>>> GetShuttles(List<string>routeIDs)
+        {
+            string routeStr = "";
+            foreach (string route in routeIDs)
+                routeStr += route + ",";
+
+            // Download stops and get json response
+            string url = "http://api.transloc.com/1.1/vehicles.json?agencies=" + agency + "&routes=" + routeStr;
+            var client = new System.Net.Http.HttpClient();
+            HttpResponseMessage response = client.GetAsync(url).Result;
+            string responseString = await response.Content.ReadAsStringAsync();
+            JsonObject obj = JsonObject.Parse(responseString);
+
+            var derp = obj["data"].GetObject();
+            var derp2 = derp[agency].GetArray();
+
+            List<Tuple<string, Location>> locsWithIDs = new List<Tuple<string,Location>>();
+            foreach (JsonValue val in derp2) {
+                var vehicleObj = val.GetObject();
+                var loc = vehicleObj["location"].GetObject();
+                double lat = loc["lat"].GetNumber();
+                double lng = loc["lng"].GetNumber();
+                string routeID = vehicleObj["route_id"].GetString();
+                locsWithIDs.Add(Tuple.Create<string, Location>(routeID, new Location(lat, lng)));
+            }
+            return locsWithIDs;
+        }
 
         #region Polyline
         public static List<Location> DecodePolyline(string polyline)
@@ -663,9 +549,5 @@ namespace HarvardShuttle
         }
         #endregion
 
-        public static void GetShuttles(string origin, string dest)
-        {
-
-        }
     }
 }

@@ -25,6 +25,7 @@ using Windows.Storage;
 using Windows.ApplicationModel.Background;
 using Bing.Maps;
 using Windows.UI;
+using Windows.UI.Xaml.Media.Animation;
 
 // The Basic Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234237
 
@@ -64,18 +65,12 @@ namespace HarvardShuttle
             UpdateFavoritesCache(currOrigin, currDest);
 
             this.pageTitle.Text = "Trip Results";
-
             this.estimateBox.Text = await Task<string>.Run(() => APIDataStore.GetArrivalEstimates(currOrigin, currDest));
             this.estimatedMinutesTextBlock.Text = "minutes";
-            Tuple<string, string> cs50names = await APIDataStore.GetCS50Names(currOrigin, currDest);
-            string originCS50 = cs50names.Item1;
-            string destCS50 = cs50names.Item2;
             UpdateOriginDest(currOrigin, currDest);
 
             // Update the schedule asynchronously
-            //Scheduler.CreateSchedule(originCS50, destCS50, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
-            //ScheduleGenerator.CreateSchedule(originCS50, destCS50, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
-            ScheduleGenerator.CreateNewSchedule(originCS50, destCS50, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
+            ScheduleGenerator.CreateNewSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
 
             // Register the background task
             if (GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Denied &&
@@ -104,41 +99,121 @@ namespace HarvardShuttle
                 return;
             }
 
-            // Get Segments (returns segment dictionary) // maps segment ids to List<Location>
-            //Dictionary<string, List<Location>> segmentMap = await APIDataStore.GetSegments();
-            // foreach route, plot segment in that color
-            foreach (string routeId in routeMap.Keys) {
-                Tuple<string, string, List<LocationCollection>> routeData = routeMap[routeId];
-                string routeName = routeData.Item1;
-                string routeColor = routeData.Item2;
-                byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
-                byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
-                byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
-                List<LocationCollection> locs = routeData.Item3;
-                var derp = locs[0].ToList<Location>();
+            MakePolylines(routeMap);
 
-                /*string theLocations = "";
-                foreach (LocationCollection locCol in locs) {
-                    foreach (Location fack in locCol) {
-                        theLocations += fack.Latitude.ToString() + ", " + fack.Longitude.ToString() + "\n";
-                    }
-                }
-                string win = theLocations; */
-
-                foreach (LocationCollection collection in locs) {
-                    MapShapeLayer shapeLayer = new MapShapeLayer();
-                    MapPolyline polyline = new MapPolyline();
-                    polyline.Locations = collection;
-                    polyline.Color = Color.FromArgb(128, r, g, b);
-                    polyline.Width = 10;
-                    shapeLayer.Shapes.Add(polyline);
-                    shuttleMap.ShapeLayers.Add(shapeLayer);
-                }
-            }
             // update color codes on UI
 
             // plot shuttles
+            AddShuttles(routeMap);
             // make background task to plot shuttles every 1-2 seconds
+
+            // Fade the map in
+            Storyboard story = new Storyboard();
+            DoubleAnimation anim = new DoubleAnimation();
+            anim.Duration = TimeSpan.FromMilliseconds(1100);
+            anim.From = 0;
+            anim.To = 1;
+            story.Children.Add(anim);
+            Storyboard.SetTarget(anim, shuttleMap);
+            Storyboard.SetTargetProperty(anim, "UIElement.Opacity");
+            story.Begin();
+        }
+
+        private async void AddShuttles(Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap)
+        {
+            List<Tuple<string, Location>> shuttleLocs = await APIDataStore.GetShuttles(routeMap.Keys.ToList<string>());
+            foreach (var derp in shuttleLocs) {
+                BigPushPin p = new BigPushPin();
+                string routeColor = routeMap[derp.Item1].Item2;
+                byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+                byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+                byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+                p.SetBackground(new SolidColorBrush(Color.FromArgb(255, r, g, b)));
+
+                MapLayer.SetPositionAnchor(p, new Point(23/2, 33/2));
+                MapLayer.SetPosition(p, derp.Item2);
+                shuttleMap.Children.Add(p);
+            }
+        }
+
+        private void MakePolylines(Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap)
+        {
+            // maps pairs of locations (small segments) to a list of corresponding IDs
+            //Dictionary<Tuple<Location, Location>, List<string>> segmentMap = new Dictionary<Tuple<Location, Location>, List<string>>();
+            Dictionary<double, Tuple<Location, Location, List<string>>> segmentMap = new Dictionary<double, Tuple<Location, Location, List<string>>>();
+            foreach (string routeId in routeMap.Keys) {
+                Tuple<string, string, List<LocationCollection>> routeData = routeMap[routeId];
+                List<LocationCollection> locs = routeData.Item3;
+                foreach (LocationCollection collection in locs) {
+                    Location prevLoc = null;
+                    foreach (Location loc in collection) {
+                        if (prevLoc != null) {
+                            double key = prevLoc.Latitude + prevLoc.Longitude + loc.Latitude + loc.Longitude;
+                            //var locPair = Tuple.Create<Location, Location>(prevLoc, loc);
+                            List<string> id_list = new List<string>();
+                            if (segmentMap.ContainsKey(key)) {
+                                id_list = segmentMap[key].Item3;
+                            }
+                            if (!id_list.Contains(routeId))
+                                id_list.Add(routeId);
+                            segmentMap[key] = Tuple.Create<Location, Location, List<string>>(prevLoc, loc, id_list);
+                        }
+                        prevLoc = loc;
+                    }
+                }
+            }
+
+            foreach (double key in segmentMap.Keys) {
+                var val = segmentMap[key];
+                List<string> ids = val.Item3;
+                Location loc1 = val.Item1;
+                Location loc2 = val.Item2;
+                if (ids.Count > 1) {
+                    int n = ids.Count;
+                    double latDiff = (loc1.Latitude - loc2.Latitude) / n;
+                    double lngDiff = (loc1.Longitude - loc2.Longitude) / n;
+
+                    for (int i = 0; i < n; i++) {
+                        Location new_loc1 = new Location(loc1.Latitude + latDiff * i, loc1.Longitude + lngDiff * i);
+                        Location new_loc2 = new Location(loc1.Latitude + latDiff * (i + 1), loc1.Longitude + lngDiff * (i + 1));
+                        LocationCollection locCollection = new LocationCollection();
+                        locCollection.Add(new_loc1);
+                        locCollection.Add(new_loc2);
+                        // split up into n finer grained location pairs
+                        // add each pair with a different id and color
+                        string routeId = ids[i];
+                        string routeColor = routeMap[routeId].Item2;
+                        byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+                        byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+                        byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+                        MapShapeLayer shapeLayer = new MapShapeLayer();
+                        MapPolyline polyline = new MapPolyline();
+                        polyline.Locations = locCollection;
+                        polyline.Color = Color.FromArgb(150, r, g, b);
+                        polyline.Width = 7;
+                        shapeLayer.Shapes.Add(polyline);
+                        shuttleMap.ShapeLayers.Add(shapeLayer);
+                    }
+                }
+                else {
+                    LocationCollection locCollection = new LocationCollection();
+                    locCollection.Add(loc1);
+                    locCollection.Add(loc2);
+                    string routeId = ids[0];
+                    string routeColor = routeMap[routeId].Item2;
+                    byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+                    byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+                    byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+                    MapShapeLayer shapeLayer = new MapShapeLayer();
+                    MapPolyline polyline = new MapPolyline();
+                    polyline.Locations = locCollection;
+                    polyline.Color = Color.FromArgb(150, r, g, b);
+                    polyline.Width = 7;
+                    shapeLayer.Shapes.Add(polyline);
+                    shuttleMap.ShapeLayers.Add(shapeLayer);
+
+                }
+            }
         }
 
         /// <summary>

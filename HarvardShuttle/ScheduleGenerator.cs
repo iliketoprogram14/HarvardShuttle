@@ -24,7 +24,6 @@ namespace HarvardShuttle
         private static string store = "last_origin_dest.xml";
         private static int maxListings = 30;
         private static int maxNotifications = 15;
-        private static string storePath = "Data/db.json";
         
         public static void CreateSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock numMinutes, TextBlock units)
         {
@@ -51,7 +50,7 @@ namespace HarvardShuttle
         public async static void CreateNewSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock numMinutes, TextBlock units)
         {
             // get intersection of routes between origin and dest
-            //Tuple<string, string, IEnumerable<string>> routes_and_ids = await APIDataStore._GetCommonRoutesAndStopIds(new_origin, new_dest);
+            //Tuple<string, string, IEnumerable<string>> routes_and_ids = await APIDataStore.GetCommonRoutesAndStopIds(new_origin, new_dest);
             
             // for each of those routes, grab the next 20 trips
             List<string> times = await APIDataStore.GetTimes(20, new_origin, new_dest);
@@ -282,7 +281,7 @@ namespace HarvardShuttle
 
         private static void SetCountdownBox(TextBlock numMinutesBox, TextBlock unitsBox, int minutes)
         {
-            if (minutes < 120) {
+            if (minutes < 100) {
                 numMinutesBox.Text = minutes.ToString();
                 unitsBox.Text = "minutes";
             }

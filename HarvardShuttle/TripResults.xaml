@@ -10,17 +10,21 @@
     x:Class="HarvardShuttle.TripResults"
     DataContext="{Binding DefaultViewModel, RelativeSource={RelativeSource Mode=Self}}"
     mc:Ignorable="d">
+    
+    <Page.Resources>
+        <Style x:Key="PushPinStyle" TargetType="Maps:Pushpin">
+            <Setter Property="Width" Value="59"/>
+            <Setter Property="Height" Value="80"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Image Source="Assets/pin2.png" Stretch="Uniform" HorizontalAlignment="Left"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
 
-    <common:LayoutAwarePage.BottomAppBar>
-        <AppBar x:Name="bottomAppBar" AutomationProperties.Name="Bottom App Bar">
-            <Grid>
-                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
-                    <Button x:Name="FavoriteButton" Style="{StaticResource FavoriteAppBarButtonStyle}" Tag="Favorite" Click="Button_Click_1"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal"/>
-            </Grid>
-        </AppBar>
-    </common:LayoutAwarePage.BottomAppBar>
 
     <!--
         This grid acts as a root panel for the page that defines two rows:
@@ -320,10 +324,10 @@
         <Viewbox Name="MapCanvas" Margin="0,0,0,50" Grid.Row="2" Grid.Column="0" Grid.RowSpan="2" VerticalAlignment="Top" HorizontalAlignment="Center">
             <ScrollViewer>
                 <Grid>
-                    <!--<Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Width="800" Height="900" Stroke="Black" VerticalAlignment="Top" Canvas.ZIndex="1" Opacity="0" />-->
+                    <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Width="1000" Height="1060" Stroke="Black" VerticalAlignment="Top" Canvas.ZIndex="1" Opacity="0" />
                     <Maps:Map Name="shuttleMap" Credentials="AhYTEH1C_7wVcn9raY0Lw0wVxc4GAySSK2ZgvXhwvpvzxjfPcWNwllRu3001Rasf" HorizontalAlignment="Center" 
                     		VerticalAlignment="Top" ZoomLevel="16" ShowScaleBar="False" ShowNavigationBar="False" ShowBuildings="False"
-                    		ViewRestriction="MapOnly" ManipulationMode="None" Canvas.ZIndex="0" Width="1000" Height="1060">
+                    		ViewRestriction="MapOnly" ManipulationMode="None" Canvas.ZIndex="0" Width="1000" Height="1060" Opacity="0">
                         <Maps:Map.Center>
                             <Maps:Location Latitude="42.374700" Longitude="-71.118772"/>
                         </Maps:Map.Center>
@@ -332,4 +336,17 @@
             </ScrollViewer>
         </Viewbox>
     </Grid>
+
+    <Page.BottomAppBar>
+        <AppBar x:Name="bottomAppBar" AutomationProperties.Name="Bottom App Bar">
+            <Grid>
+                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                    <Button x:Name="FavoriteButton" Style="{StaticResource FavoriteAppBarButtonStyle}" Tag="Favorite" Click="Button_Click_1"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal"/>
+            </Grid>
+        </AppBar>
+    </Page.BottomAppBar>
+
+
 </common:LayoutAwarePage>
