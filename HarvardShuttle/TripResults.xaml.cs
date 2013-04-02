@@ -26,6 +26,7 @@ using Windows.ApplicationModel.Background;
 using Bing.Maps;
 using Windows.UI;
 using Windows.UI.Xaml.Media.Animation;
+using DataStore;
 
 // The Basic Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234237
 
@@ -65,12 +66,12 @@ namespace HarvardShuttle
             UpdateFavoritesCache(currOrigin, currDest);
 
             this.pageTitle.Text = "Trip Results";
-            this.estimateBox.Text = await Task<string>.Run(() => APIDataStore.GetArrivalEstimates(currOrigin, currDest));
+            this.estimateBox.Text = await Task<string>.Run(() => MainDataStore.GetArrivalEstimates(currOrigin, currDest));
             this.estimatedMinutesTextBlock.Text = "minutes";
             UpdateOriginDest(currOrigin, currDest);
 
             // Update the schedule asynchronously
-            ScheduleGenerator.CreateNewSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
+            DataStore.Scheduler.CreateNewSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
 
             // Register the background task
             if (GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Denied &&
@@ -82,13 +83,13 @@ namespace HarvardShuttle
             if (estimateBox.Text != "") {
                 // if boardingTime > scheduledTime, changed boarding box to say "Probably leaving in (may need to span more columns)
                 // Get Routes (returns routes shared between origin and dest that are active, mapped to tuple of color, name and list of segments)
-                routeMap = await APIDataStore.GetRoutes(currOrigin, currDest);
+                routeMap = await MainDataStore.GetRoutes(currOrigin, currDest);
             }
             else {
                 // "No estimate for boarding time" (may need to span more columns)
                 // make invisible estimateBox, estimateMinutesBox
                 // get all routes
-                routeMap = await APIDataStore.GetRoutes("", "");
+                routeMap = await MainDataStore.GetRoutes("", "");
             }
 
             // if there are no routes, hide map and color code, replace with message that there are no routes currently running

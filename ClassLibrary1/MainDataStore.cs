@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using HarvardShuttle.Data;
 using Windows.Storage;
 using Windows.Data.Json;
 using Windows.Data.Xml.Dom;
@@ -27,9 +26,9 @@ using Bing.Maps;
 ///   <routes>
 /// </api_data_store>
 
-namespace HarvardShuttle
+namespace DataStore
 {
-    public class APIDataStore
+    public class MainDataStore
     {
         private static string agency = "52";
         private static string cache = "";
@@ -37,8 +36,8 @@ namespace HarvardShuttle
         private static string storeFolder = "DataSource";
         private static StorageFolder installLoc = Windows.ApplicationModel.Package.Current.InstalledLocation;
 
-            
-        private class TimeDictionary 
+
+        private class TimeDictionary
         {
             private string originID, destID;
             private int currTimeInt;
@@ -47,7 +46,8 @@ namespace HarvardShuttle
             private string currDay;
             private SortedDictionary<int, List<Tuple<string, JsonObject>>> timeDict;
 
-            public TimeDictionary(string originID, string destID) {
+            public TimeDictionary(string originID, string destID)
+            {
                 this.originID = originID;
                 this.destID = destID;
                 var hr = DateTime.Now.Hour;
@@ -58,7 +58,7 @@ namespace HarvardShuttle
                 currTimeInt = hr * 60 + min;
                 origTimeInt = currTimeInt;
                 currTime = hr.ToString() + ":" + min.ToString();
-                timeDict = new SortedDictionary<int,List<Tuple<string,JsonObject>>>();
+                timeDict = new SortedDictionary<int, List<Tuple<string, JsonObject>>>();
             }
 
             private string NextDay(string day)
@@ -95,7 +95,7 @@ namespace HarvardShuttle
                         if (!tripDays.Contains(day))
                             continue;
                     }
-                                        
+
                     // grab the next time for today
                     string time = tripObj[originID].GetString();
                     if (time == "") continue;
@@ -129,14 +129,16 @@ namespace HarvardShuttle
                 return false;
             }
 
-            public void AddObj(JsonObject obj) {
+            public void AddObj(JsonObject obj)
+            {
                 if (AddCountdown(obj, currDay, false))
                     return;
                 string nextDay = NextDay(currDay);
                 AddCountdown(obj, nextDay, true);
             }
 
-            public string PopAndUpdate() {
+            public string PopAndUpdate()
+            {
                 int countdown = 0;
                 string nextTimeStr = "";
                 JsonObject routeObj = new JsonObject();
@@ -367,9 +369,9 @@ namespace HarvardShuttle
             return Tuple.Create<string, string, IEnumerable<string>>(originID, destID, common_routes);
         }
 
-        public async static Task<List<string>> GetTimes(int num, string origin, string dest) 
+        public async static Task<List<string>> GetTimes(int num, string origin, string dest)
         {
-            Tuple<string, string, IEnumerable<string>> routes_and_ids = await APIDataStore.GetCommonRoutesAndStopIds(origin, dest);
+            Tuple<string, string, IEnumerable<string>> routes_and_ids = await MainDataStore.GetCommonRoutesAndStopIds(origin, dest);
             string originID = routes_and_ids.Item1;
             string destID = routes_and_ids.Item2;
             List<string> routes = routes_and_ids.Item3.ToList<string>();
@@ -398,7 +400,7 @@ namespace HarvardShuttle
             return times;
         }
 
-        public async static Task<List<Tuple<string, Location>>> GetShuttles(List<string>routeIDs)
+        public async static Task<List<Tuple<string, Location>>> GetShuttles(List<string> routeIDs)
         {
             string routeStr = "";
             foreach (string route in routeIDs)
@@ -414,7 +416,7 @@ namespace HarvardShuttle
             var derp = obj["data"].GetObject();
             var derp2 = derp[agency].GetArray();
 
-            List<Tuple<string, Location>> locsWithIDs = new List<Tuple<string,Location>>();
+            List<Tuple<string, Location>> locsWithIDs = new List<Tuple<string, Location>>();
             foreach (JsonValue val in derp2) {
                 var vehicleObj = val.GetObject();
                 var loc = vehicleObj["location"].GetObject();

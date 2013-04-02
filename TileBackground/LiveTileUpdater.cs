@@ -11,6 +11,7 @@ using Windows.Data.Xml;
 using System.IO;
 using System.Net;
 using System.Xml;
+using DataStore;
 
 namespace TileBackground
 {
@@ -19,7 +20,8 @@ namespace TileBackground
         public void Run(IBackgroundTaskInstance taskInstance)
         {
             BackgroundTaskDeferral deferral = taskInstance.GetDeferral();
-            Scheduler.CreateExtendedSchedule();
+            //Scheduler.CreateExtendedSchedule();
+            DataStore.Scheduler.CreateExtendedSchedule();
             deferral.Complete();
         }
 

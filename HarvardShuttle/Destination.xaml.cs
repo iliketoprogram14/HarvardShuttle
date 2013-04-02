@@ -13,6 +13,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using DataStore;
 
 // The Grouped Items Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234231
 
@@ -43,7 +44,14 @@ namespace HarvardShuttle
         {
             origin = (DataItem)navigationParameter;
             ObservableCollection<DataGroup> toGroup = new ObservableCollection<DataGroup>();
-            DataGroup destGroup = await APIDataStore.GetDestinations(origin.Title);
+            DataGroup destGroup = new DataGroup("Dest-Group", "To", "", "Assets/DarkGray.png", "");
+            HashSet<string> destSet = await MainDataStore.GetDestinations(origin.Title);
+
+            DataGroup itemGroup = DataSource.GetGroup("Group-1");
+            foreach (DataItem item in itemGroup.Items)
+                if (destSet.Contains(item.Title))
+                    destGroup.Items.Add(item);
+            
             toGroup.Add(destGroup);
 
             // Update the view
