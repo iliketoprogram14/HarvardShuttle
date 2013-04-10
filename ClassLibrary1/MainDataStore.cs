@@ -193,6 +193,24 @@ namespace DataStore
             return segmentArr;
         }
 
+        public async static Task<string> GetRouteName(string routeID)
+        {
+            string store = await RefreshCache();
+            JsonObject obj = JsonObject.Parse(store);
+            JsonArray routes = obj["routes"].GetArray();
+
+            string routeTitle = "fack";
+            foreach (JsonValue val in routes) {
+                JsonObject routeObj = val.GetObject();
+                if (routeObj["id"].GetString() == routeID) {
+                    routeTitle = routeObj["name"].GetString();
+                    break;
+                }
+            }
+
+            return routeTitle;
+        }
+
         public async static Task<HashSet<string>> GetDestinations(string origin)
         {
             // Init data structures

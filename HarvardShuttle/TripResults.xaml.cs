@@ -119,6 +119,10 @@ namespace HarvardShuttle
             MakePolylines(routeMap);
 
             // update color codes on UI
+            foreach (var key in commonRouteIDsColors.Keys) {
+                string name = await MainDataStore.GetRouteName(key);
+                this.ColorCodePanel.Children.Add(new ColorCodeBox(commonRouteIDsColors[key], name));
+            }
 
             // plot shuttles
             List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());

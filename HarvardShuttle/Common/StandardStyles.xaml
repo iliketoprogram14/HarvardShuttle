@@ -1848,6 +1848,15 @@
 
 
     <!-- Custom Item templates -->
+    <DataTemplate x:Key="ListViewCustomTemplate">
+        <Grid>
+            <Border Background="LightGray" Height="200" Width="200">
+                <TextBlock Text="{Binding}" 
+                               FontSize="48" Foreground="Green" />
+            </Border>
+        </Grid>
+    </DataTemplate>
+    
     <DataTemplate x:Key="MainItemTemplate">
         <Grid HorizontalAlignment="Left" Width="250" Height="150" Margin="10,10,10,10">
             <Border>

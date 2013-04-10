@@ -16,6 +16,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.Storage;
 using Windows.Networking.Connectivity;
 using Windows.Data.Json;
+using System.Diagnostics;
 
 namespace DataStore
 {
@@ -28,8 +29,9 @@ namespace DataStore
         public async static void CreateSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock numMinutes, TextBlock units)
         {
             await CallService(new_origin, new_dest, results, numMinutes, units);
-            results.Height = (results.Items.Count * 20 < height) ?
-                results.Items.Count * 20 : height;
+            /*results.Height = (results.Items.Count * 20 < height) ?
+                results.Items.Count * 40 : height;*/
+            //results.Height = results.Children.Count * 40;
             results.FontSize = 40;
             UpdateLastOriginDest(new_origin, new_dest);
         }
@@ -113,6 +115,8 @@ namespace DataStore
             }
 
             if (results != null && results.Items.Count == 0) {
+                TextBlock block = new TextBlock();
+                block.Text = "No further times scheduled.";
                 results.Items.Add("No further times scheduled.");
             }
         }
@@ -146,7 +150,12 @@ namespace DataStore
             string msg = (hourCountdown == 0) ? "" : hourCountdown.ToString() + " hour" + ((hourCountdown == 1) ? " " : "s ");
             msg += minuteCountdown.ToString() + " minute" + ((minuteCountdown == 1) ? "" : "s");
 
+            TextBlock block = new TextBlock();
+            block.Text = msg;
+            block.FontSize = 20;
             resultsList.Items.Add(msg);
+
+            //resultsList.Items.Add(msg);
         }
 
         private static int AddTileNotifications(int nextMinuteCountdown, int numNotifications, string origin, string dest, TileUpdater updater)
