@@ -28,6 +28,7 @@ using Windows.UI;
 using Windows.UI.Xaml.Media.Animation;
 using DataStore;
 using Windows.System.Threading;
+using System.Diagnostics;
 
 // The Basic Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234237
 
@@ -88,7 +89,6 @@ namespace HarvardShuttle
                     this.realEstimateTextBlock.Visibility = Visibility.Visible;
                 }
                 else {
-                    // Get Routes (returns routes shared between origin and dest that are active, mapped to tuple of color, name and list of segments)
                     this.boardingTextBlock.Visibility = Visibility.Visible;
                 }
             }
@@ -96,8 +96,6 @@ namespace HarvardShuttle
                 this.boardingTextBlock.Visibility = Visibility.Collapsed;
                 this.estimateBox.Visibility = Visibility.Collapsed;
                 this.estimatedMinutesTextBlock.Visibility = Visibility.Collapsed;
-                //this.realEstimateTextBlock.Visibility = Visibility.Visible;
-                //routeMap = await MainDataStore.GetRoutes("", "");
                 this.shuttleMap.Visibility = Visibility.Collapsed;
                 this.notRunningTextBlock.Visibility = Visibility.Visible;
                 this.notRunningTextBlock2.Visibility = Visibility.Visible;
@@ -125,7 +123,6 @@ namespace HarvardShuttle
             // plot shuttles
             List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
             AddShuttles(shuttleLocs);
-            // make background task to plot shuttles every 1-2 seconds
 
             FadeInMap();
 
@@ -164,14 +161,14 @@ namespace HarvardShuttle
         private void AddShuttles(List<Tuple<string, Location>> shuttleLocs)
         {
             foreach (var derp in shuttleLocs) {
-                BigPushPin p = new BigPushPin();
+                ShuttlePin p = new ShuttlePin();
                 string routeColor = commonRouteIDsColors[derp.Item1];
                 byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
                 byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
                 byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
                 p.SetBackground(new SolidColorBrush(Color.FromArgb(255, r, g, b)));
 
-                MapLayer.SetPositionAnchor(p, new Point(23 / 2, 33 / 2));
+                MapLayer.SetPositionAnchor(p, p.GetAnchor());
                 MapLayer.SetPosition(p, derp.Item2);
                 shuttleMap.Children.Add(p);
             }
@@ -183,89 +180,107 @@ namespace HarvardShuttle
                 List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
                 var crap = shuttleMap.Children.ToList<UIElement>();
                 foreach (var derp in crap) {
-                    if (derp.GetType() == typeof(BigPushPin))
+                    if (derp.GetType() == typeof(ShuttlePin))
                         shuttleMap.Children.Remove(derp);
                 }
                 AddShuttles(shuttleLocs);
             });
         }
 
+        private void AddPolyline(string routeColor, LocationCollection collection)
+        {
+            byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+            byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+            byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+            MapShapeLayer shapeLayer = new MapShapeLayer();
+            MapPolyline polyline = new MapPolyline();
+            polyline.Locations = collection;
+            polyline.Color = Color.FromArgb(180, r, g, b);
+            polyline.Width = 8;
+            shapeLayer.Shapes.Add(polyline);
+            shuttleMap.ShapeLayers.Add(shapeLayer);
+        }
+
+        private double GetHash(LocationCollection collection)
+        {
+            double hash = 0;
+            foreach (Location loc in collection) {
+                hash += loc.Latitude + loc.Longitude;
+            }
+            return hash;
+        }
+
         private void MakePolylines(Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap)
         {
-            // maps pairs of locations (small segments) to a list of corresponding IDs
-            //Dictionary<Tuple<Location, Location>, List<string>> segmentMap = new Dictionary<Tuple<Location, Location>, List<string>>();
-            Dictionary<double, Tuple<Location, Location, List<string>>> segmentMap = new Dictionary<double, Tuple<Location, Location, List<string>>>();
+            // ultimately is list of routes -> segments
+            // split up route collections into route collections that include "shared routes"
+            Dictionary<double, Tuple<LocationCollection, List<string>>> segmentToIdMap = new Dictionary<double, Tuple<LocationCollection, List<string>>>();
             foreach (string routeId in routeMap.Keys) {
                 Tuple<string, string, List<LocationCollection>> routeData = routeMap[routeId];
                 List<LocationCollection> locs = routeData.Item3;
                 foreach (LocationCollection collection in locs) {
-                    Location prevLoc = null;
-                    foreach (Location loc in collection) {
-                        if (prevLoc != null) {
-                            double key = prevLoc.Latitude + prevLoc.Longitude + loc.Latitude + loc.Longitude;
-                            //var locPair = Tuple.Create<Location, Location>(prevLoc, loc);
-                            List<string> id_list = new List<string>();
-                            if (segmentMap.ContainsKey(key)) {
-                                id_list = segmentMap[key].Item3;
-                            }
-                            if (!id_list.Contains(routeId))
-                                id_list.Add(routeId);
-                            segmentMap[key] = Tuple.Create<Location, Location, List<string>>(prevLoc, loc, id_list);
-                        }
-                        prevLoc = loc;
+                    double key = GetHash(collection);
+                    List<string> idList = new List<string>();
+                    if (segmentToIdMap.ContainsKey(key)) {
+                        idList = segmentToIdMap[key].Item2;
+                        Debug.WriteLine("oh hi there" + idList);
                     }
+                    idList.Add(routeId);
+                    segmentToIdMap[key] = Tuple.Create<LocationCollection, List<string>>(collection, idList);
                 }
             }
 
-            foreach (double key in segmentMap.Keys) {
-                var val = segmentMap[key];
-                List<string> ids = val.Item3;
-                Location loc1 = val.Item1;
-                Location loc2 = val.Item2;
-                if (ids.Count > 1) {
-                    int n = ids.Count;
-                    double latDiff = (loc1.Latitude - loc2.Latitude) / n;
-                    double lngDiff = (loc1.Longitude - loc2.Longitude) / n;
-
-                    for (int i = 0; i < n; i++) {
-                        Location new_loc1 = new Location(loc1.Latitude + latDiff * i, loc1.Longitude + lngDiff * i);
-                        Location new_loc2 = new Location(loc1.Latitude + latDiff * (i + 1), loc1.Longitude + lngDiff * (i + 1));
-                        LocationCollection locCollection = new LocationCollection();
-                        locCollection.Add(new_loc1);
-                        locCollection.Add(new_loc2);
-                        // split up into n finer grained location pairs
-                        // add each pair with a different id and color
-                        string routeId = ids[i];
-                        string routeColor = routeMap[routeId].Item2;
-                        byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
-                        byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
-                        byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
-                        MapShapeLayer shapeLayer = new MapShapeLayer();
-                        MapPolyline polyline = new MapPolyline();
-                        polyline.Locations = locCollection;
-                        polyline.Color = Color.FromArgb(180, r, g, b);
-                        polyline.Width = 8;
-                        shapeLayer.Shapes.Add(polyline);
-                        shuttleMap.ShapeLayers.Add(shapeLayer);
-                    }
+            foreach (double key in segmentToIdMap.Keys) {
+                LocationCollection collection = segmentToIdMap[key].Item1;
+                List<string> idList = segmentToIdMap[key].Item2;
+                if (idList.Count == 1) {
+                    string routeId = idList[0];
+                    string routeColor = routeMap[routeId].Item2;
+                    AddPolyline(routeColor, collection);
                 }
                 else {
-                    LocationCollection locCollection = new LocationCollection();
-                    locCollection.Add(loc1);
-                    locCollection.Add(loc2);
-                    string routeId = ids[0];
-                    string routeColor = routeMap[routeId].Item2;
-                    byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
-                    byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
-                    byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
-                    MapShapeLayer shapeLayer = new MapShapeLayer();
-                    MapPolyline polyline = new MapPolyline();
-                    polyline.Locations = locCollection;
-                    polyline.Color = Color.FromArgb(180, r, g, b);
-                    polyline.Width = 8;
-                    shapeLayer.Shapes.Add(polyline);
-                    shuttleMap.ShapeLayers.Add(shapeLayer);
-
+                    int i = 0;
+                    int n = idList.Count;
+                    Location prevLoc = null;
+                    double totalDist = 0;
+                    double maxDist = 0.00025;
+                    foreach (Location loc in collection) {
+                        if (prevLoc != null) {
+                            double dist = Math.Sqrt(Math.Pow((prevLoc.Longitude - loc.Longitude), 2) + Math.Pow((prevLoc.Latitude - prevLoc.Latitude), 2));
+                            if (dist > maxDist) {
+                                int numSteps = (int)Math.Ceiling(dist / maxDist);
+                                double latDiff = (loc.Latitude - prevLoc.Latitude) / numSteps;
+                                double lngDiff = (loc.Longitude - prevLoc.Longitude) / numSteps;
+                                for (int j = 0; j < numSteps; j++) {
+                                    Location new_loc1 = new Location(prevLoc.Latitude + latDiff * j, prevLoc.Longitude + lngDiff * j);
+                                    Location new_loc2 = new Location(prevLoc.Latitude + latDiff * (j + 1), prevLoc.Longitude + lngDiff * (j + 1));
+                                    LocationCollection newLocCollection = new LocationCollection();
+                                    newLocCollection.Add(new_loc1);
+                                    newLocCollection.Add(new_loc2);
+                                    string routeId = idList[i];
+                                    string routeColor = routeMap[routeId].Item2;
+                                    AddPolyline(routeColor, newLocCollection);
+                                    i = (i + 1) % n;
+                                }
+                            }
+                            else {
+                                // add polyline between loc and prevLoc
+                                LocationCollection pair = new LocationCollection();
+                                pair.Add(prevLoc);
+                                pair.Add(loc);
+                                string routeId = idList[i];
+                                string routeColor = routeMap[routeId].Item2;
+                                AddPolyline(routeColor, pair);
+                                totalDist += dist;
+                                Debug.WriteLine(dist);
+                                if (totalDist > maxDist) {
+                                    totalDist = 0;
+                                    i = (i + 1) % n;
+                                }
+                            }
+                        }
+                        prevLoc = loc;
+                    }
                 }
             }
         }

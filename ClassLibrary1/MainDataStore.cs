@@ -284,7 +284,7 @@ namespace DataStore
         /// </summary>
         /// <param name="origin"></param>
         /// <param name="dest"></param>
-        /// <returns>Dictionary that maps route ids to a tuple of a color, the route name, and a list of segment ids</returns>
+        /// <returns>Dictionary that maps route ids to a tuple of a color, the route name, and a list of segment collections</returns>
         public async static Task<Dictionary<string, Tuple<string, string, List<LocationCollection>>>> GetRoutes(string origin, string dest)
         {
             bool checkForAllRoutes = (origin == "" && dest == "");

@@ -135,6 +135,9 @@
     <Compile Include="SettingsFlyout.xaml.cs">
       <DependentUpon>SettingsFlyout.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ShuttlePin.xaml.cs">
+      <DependentUpon>ShuttlePin.xaml</DependentUpon>
+    </Compile>
     <Compile Include="TripResults.xaml.cs">
       <DependentUpon>TripResults.xaml</DependentUpon>
     </Compile>
@@ -200,6 +203,10 @@
     <Page Include="SettingsFlyout.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ShuttlePin.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="TripResults.xaml">
       <SubType>Designer</SubType>
