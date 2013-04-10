@@ -53,6 +53,16 @@ namespace HarvardShuttle
         }
 
         /// <summary>
+        /// Preserves state associated with this page in case the application is suspended or the
+        /// page is discarded from the navigation cache.  Values must conform to the serialization
+        /// requirements of <see cref="SuspensionManager.SessionState"/>.
+        /// </summary>
+        /// <param name="pageState">An empty dictionary to be populated with serializable state.</param>
+        protected override void SaveState(Dictionary<String, Object> pageState)
+        {
+        }
+        
+        /// <summary>
         /// Populates the page with content passed during navigation.  Any saved state is also
         /// provided when recreating a page from a prior session.
         /// </summary>
@@ -68,18 +78,52 @@ namespace HarvardShuttle
             currDest = items.Item2;
             UpdateFavoritesCache(currOrigin, currDest);
 
+            // Register the background task
+            if (GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Denied &&
+                GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Unspecified)
+                RegisterBackgroundTask();
+
             this.pageTitle.Text = "Trip Results";
             UpdateOriginDest(currOrigin, currDest);
+
+            // grab the route map (route id -> (name, color, segment list)
+            Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap;
+            routeMap = await PopulateUI();
+            if (routeMap == null)
+                return;
+
+            // cache route IDs and their colors
+            commonRouteIDsColors = new Dictionary<string, string>();
+            foreach (var key in routeMap.Keys)
+                commonRouteIDsColors[key] = routeMap[key].Item2;
+
+            MakePolylines(routeMap);
+
+            // update color codes on UI
+            foreach (var key in commonRouteIDsColors.Keys) {
+                //string name = await MainDataStore.GetRouteName(key);
+                string name = routeMap[key].Item1;
+                this.ColorCodePanel.Children.Add(new ColorCodeBox(commonRouteIDsColors[key], name));
+            }
+
+            // plot shuttles
+            List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
+            AddShuttles(shuttleLocs);
+
+            FadeInMap();
+
+            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateShuttles, TimeSpan.FromMilliseconds(2500));
+            ThreadPoolTimer uiUpdaterTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateUI, TimeSpan.FromSeconds(60));
+        }
+
+        private async Task<Dictionary<string, Tuple<string, string, List<LocationCollection>>>> PopulateUI()
+        {
+
             this.estimateBox.Text = await Task<string>.Run(() => MainDataStore.GetArrivalEstimates(currOrigin, currDest));
             this.estimatedMinutesTextBlock.Text = "minutes";
 
             // Update the schedule asynchronously
             DataStore.Scheduler.CreateSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
-
-            // Register the background task
-            if (GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Denied &&
-                GroupedItemsPage.asyncStatus != BackgroundAccessStatus.Unspecified)
-                RegisterBackgroundTask();
 
             if (estimateBox.Text != "") {
                 // if boardingTime > scheduledTime, changed boarding box to say "Probably leaving in (may need to span more columns)
@@ -93,44 +137,28 @@ namespace HarvardShuttle
                 }
             }
             else {
+                this.realEstimateTextBlock.Visibility = Visibility.Visible;
                 this.boardingTextBlock.Visibility = Visibility.Collapsed;
                 this.estimateBox.Visibility = Visibility.Collapsed;
                 this.estimatedMinutesTextBlock.Visibility = Visibility.Collapsed;
                 this.shuttleMap.Visibility = Visibility.Collapsed;
                 this.notRunningTextBlock.Visibility = Visibility.Visible;
                 this.notRunningTextBlock2.Visibility = Visibility.Visible;
-                return;
+                return null;
             }
 
             Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap;
             routeMap = await MainDataStore.GetRoutes(currOrigin, currDest);
-            commonRouteIDsColors = new Dictionary<string, string>();
-            foreach (var key in routeMap.Keys)
-                commonRouteIDsColors[key] = routeMap[key].Item2;
 
             // if there are no routes, hide map and color code, replace with message that there are no routes currently running
             if (routeMap.Keys.Count == 0) {
                 this.shuttleMap.Visibility = Visibility.Collapsed;
-                // collapse color code
+                this.ColorCodePanel.Visibility = Visibility.Collapsed;
                 // display message that no routes are running
-                return;
+                return null;
             }
 
-            MakePolylines(routeMap);
-
-            // update color codes on UI
-            foreach (var key in commonRouteIDsColors.Keys) {
-                string name = await MainDataStore.GetRouteName(key);
-                this.ColorCodePanel.Children.Add(new ColorCodeBox(commonRouteIDsColors[key], name));
-            }
-
-            // plot shuttles
-            List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
-            AddShuttles(shuttleLocs);
-
-            FadeInMap();
-
-            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateShuttles, TimeSpan.FromMilliseconds(2500));
+            return routeMap;
         }
 
         private bool EstimatedWaitGreaterThanScheduledWait()
@@ -162,6 +190,12 @@ namespace HarvardShuttle
             story.Begin();
         }
 
+        private async void UpdateUI(ThreadPoolTimer timer)
+        {
+            await PopulateUI();
+        }
+
+        #region Shuttles
         private void AddShuttles(List<Tuple<string, Location>> shuttleLocs)
         {
             foreach (var derp in shuttleLocs) {
@@ -180,17 +214,20 @@ namespace HarvardShuttle
 
         private async void UpdateShuttles(ThreadPoolTimer timer)
         {
+            /* CAN I MOVE THE FIRST TWO LINES OUT OF THE DISPATCH THREAD?????? */
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, async () => {
                 List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
-                var crap = shuttleMap.Children.ToList<UIElement>();
-                foreach (var derp in crap) {
-                    if (derp.GetType() == typeof(ShuttlePin))
-                        shuttleMap.Children.Remove(derp);
+                var oldShuttles = shuttleMap.Children.ToList<UIElement>();
+                foreach (var oldShuttle in oldShuttles) {
+                    if (oldShuttle.GetType() == typeof(ShuttlePin))
+                        shuttleMap.Children.Remove(oldShuttle);
                 }
                 AddShuttles(shuttleLocs);
             });
         }
+        #endregion
 
+        #region Polylines
         private void AddPolyline(string routeColor, LocationCollection collection)
         {
             byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
@@ -288,17 +325,9 @@ namespace HarvardShuttle
                 }
             }
         }
+        #endregion
 
-        /// <summary>
-        /// Preserves state associated with this page in case the application is suspended or the
-        /// page is discarded from the navigation cache.  Values must conform to the serialization
-        /// requirements of <see cref="SuspensionManager.SessionState"/>.
-        /// </summary>
-        /// <param name="pageState">An empty dictionary to be populated with serializable state.</param>
-        protected override void SaveState(Dictionary<String, Object> pageState)
-        {
-        }
-
+        #region UI helpers
         private async void UpdateFavoritesCache(string origin, string dest)
         {
             file = await GroupedItemsPage.localFolder.GetFileAsync(GroupedItemsPage.favoritesStorePath);
@@ -384,7 +413,9 @@ namespace HarvardShuttle
                 var derp = task.ToString();
             }
         }
+        #endregion
 
+        #region Event Handlers
         /// <summary>
         /// Event handler for favorites button; adds trip to the favorites section on the main screen
         /// </summary>
@@ -415,5 +446,6 @@ namespace HarvardShuttle
             UpdateButtonStyle();
             await FileIO.WriteTextAsync(file, favoritesXmlCache);
         }
+        #endregion
     }
 }
