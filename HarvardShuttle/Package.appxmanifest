@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/2010/manifest">
-  <Identity Name="22022b6f-f1d2-40a7-a7d7-b880007e6b69" Publisher="CN=LocalAdmin" Version="1.0.0.0" />
+  <Identity Name="20653RandyMiller.HarvardShuttle" Publisher="CN=5CFFA44D-69BB-4D28-B2B2-98D320FBD693" Version="1.0.0.0" />
   <Properties>
     <DisplayName>Harvard Shuttle</DisplayName>
     <PublisherDisplayName>Randy Miller</PublisherDisplayName>
@@ -15,10 +15,10 @@
   </Resources>
   <Applications>
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="HarvardShuttle.App">
-      <VisualElements DisplayName="Harvard Shuttle" Logo="Assets\bus-white-150.png" SmallLogo="Assets\bus30.png" Description="Harvard Shuttle" ForegroundText="light" BackgroundColor="#8c1717" ToastCapable="false">
+      <VisualElements DisplayName="Harvard Shuttle" Logo="Assets\bus-white-150.png" SmallLogo="Assets\bus30.png" Description="Harvard Shuttle" ForegroundText="light" BackgroundColor="#80001E" ToastCapable="false">
         <LockScreen Notification="badgeAndTileText" BadgeLogo="Assets/bus24white.png" />
         <DefaultTile ShowName="logoOnly" ShortName="Harvard Shuttle" WideLogo="Assets\wide-logo-white.png" />
-        <SplashScreen Image="Assets\Splash-Screen-HarvardShuttle.png" BackgroundColor="#8C1717" />
+        <SplashScreen Image="Assets\Splash-Screen-HarvardShuttle.png" BackgroundColor="#80001E" />
       </VisualElements>
       <Extensions>
         <Extension Category="windows.backgroundTasks" EntryPoint="TileBackground.LiveTileUpdater">

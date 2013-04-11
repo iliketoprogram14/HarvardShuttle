@@ -1832,7 +1832,7 @@
     <!-- Custom brushes -->
     <SolidColorBrush x:Key="BlockBackgroundBrush" Color="#FF557EB9"/>
     <SolidColorBrush x:Key="ListViewItemOverlayBackgroundThemeBlackBrush" Color="#BF000000" />
-    <SolidColorBrush x:Key="CrimsonBackgroundBrush" Color="#FF8C1717"/>
+    <SolidColorBrush x:Key="CrimsonBackgroundBrush" Color="#FF80001E"/>
 
     <!-- Custom layout -->
     <Style x:Key="CrimsonLayoutStyle" TargetType="Panel">

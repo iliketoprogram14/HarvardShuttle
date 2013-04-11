@@ -12,7 +12,10 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{BC8A1FFA-BEE3-4634-8014-F334798102B3};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <PackageCertificateKeyFile>HarvardShuttle_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateKeyFile>HarvardShuttle_StoreKey.pfx</PackageCertificateKeyFile>
+    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+    <PackageCertificateThumbprint>EF7E54480A4CB235B833C900AA065EB5B1568323</PackageCertificateThumbprint>
+    <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -149,6 +152,7 @@
     <None Include="Assets\db.json" />
     <None Include="Common\ReadMe.txt" />
     <Content Include="DataSource\db.json" />
+    <None Include="HarvardShuttle_StoreKey.pfx" />
     <None Include="HarvardShuttle_TemporaryKey.pfx" />
     <None Include="Properties\DataSources\HarvardShuttle.Data.DataCommon.datasource" />
     <None Include="Properties\DataSources\HarvardShuttle.Data.DataGroup.datasource" />
@@ -162,6 +166,7 @@
     <Content Include="Assets\Splash-Screen-HarvardShuttle.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\wide-logo-white.png" />
+    <None Include="Package.StoreAssociation.xml" />
     <Content Include="StopImages\20gardenst.jpg" />
     <Content Include="StopImages\boylstongate.jpg" />
     <Content Include="StopImages\harvardsquare.jpg" />
