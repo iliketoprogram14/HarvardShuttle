@@ -122,15 +122,44 @@ namespace HarvardShuttle
             string estimateUnits = this.estimatedMinutesTextBlock.Text;
             string scheduledUnits = this.minutesTextBlock.Text;
 
-            if (estimateUnits == "minutes" && scheduledUnits == "hours")
+            if (estimateUnits.Contains("minute") && scheduledUnits.Contains("hour"))
                 return false;
-            if (estimateUnits == "hours" && scheduledUnits == "minutes")
+            if (estimateUnits.Contains("hour") && scheduledUnits.Contains("minute"))
                 return true;
 
             double estimate = Double.Parse(this.estimateBox.Text);
             double scheduled = Double.Parse(this.numMinutesTextBlock.Text);
 
             return (estimate > scheduled);
+        }
+
+        private bool EstimatedWaitIsForSecondShuttle()
+        {
+            string estimateUnits = this.estimatedMinutesTextBlock.Text;
+            string nextScheduledTime = this.ResultsList.Items[0].ToString();
+
+            if (estimateUnits == "minutes" && nextScheduledTime.Contains("hour"))
+                return false;
+            if (estimateUnits == "hours" && !nextScheduledTime.Contains("minute"))
+                return true;
+
+            double nextScheduled = 0;
+            if (nextScheduledTime.Contains("hour")) {
+                string[] delim = {"hour", "hours", "minute", "minutes"};
+                string[] fields = nextScheduledTime.Split(delim, StringSplitOptions.RemoveEmptyEntries);
+                nextScheduled += Double.Parse(fields[0]);
+                if (fields.Length > 1)
+                    nextScheduled += Double.Parse(fields[1]);
+            } else {
+                string[] delim = {"minute", "minutes"};
+                string[] fields = nextScheduledTime.Split(delim, StringSplitOptions.RemoveEmptyEntries);
+                nextScheduled += Double.Parse(fields[0]);
+            }
+
+            double estimate = Double.Parse(this.estimateBox.Text);
+            double scheduled = nextScheduled;
+
+            return (Math.Abs(estimate - scheduled) <= 2.5);
         }
 
         /// <summary>
@@ -159,9 +188,17 @@ namespace HarvardShuttle
             if (estimateBox.Text != "") {
                 // if boardingTime > scheduledTime, changed boarding box to say "Probably leaving in (may need to span more columns)
                 if (EstimatedWaitGreaterThanScheduledWait()) {
-                    this.boardingTextBlock.Visibility = Visibility.Collapsed;
-                    this.realEstimateTextBlock.Text = "Will probably arrive in";
-                    this.realEstimateTextBlock.Visibility = Visibility.Visible;
+                    // the estimate may be for the shuttle after next; if it is, then that means the current shuttle is here and waiting for departure
+                    if (EstimatedWaitIsForSecondShuttle()) {
+                        this.estimateBox.Text = "0";
+                        this.boardingTextBlock.Visibility = Visibility.Visible;
+                        this.realEstimateTextBlock.Visibility = Visibility.Collapsed;
+                    }
+                    else {
+                        this.boardingTextBlock.Visibility = Visibility.Collapsed;
+                        this.realEstimateTextBlock.Text = "Will probably arrive in";
+                        this.realEstimateTextBlock.Visibility = Visibility.Visible;
+                    }
                 }
                 else {
                     this.boardingTextBlock.Visibility = Visibility.Visible;
@@ -169,6 +206,7 @@ namespace HarvardShuttle
                 }
                 this.notRunningTextBlock.Visibility = Visibility.Collapsed;
                 this.notRunningTextBlock.Visibility = Visibility.Collapsed;
+                this.shuttleMap.Visibility = Visibility.Visible;
             }
             else {
                 this.realEstimateTextBlock.Visibility = Visibility.Visible;
