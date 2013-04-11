@@ -121,9 +121,6 @@
       <DependentUpon>Destination.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainItemTemplateSelector.cs" />
-    <Compile Include="BigPushPin.xaml.cs">
-      <DependentUpon>BigPushPin.xaml</DependentUpon>
-    </Compile>
     <Compile Include="ColorCodeBox.xaml.cs">
       <DependentUpon>ColorCodeBox.xaml</DependentUpon>
     </Compile>
@@ -196,10 +193,6 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Destination.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="BigPushPin.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
