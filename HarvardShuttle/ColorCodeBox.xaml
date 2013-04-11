@@ -9,7 +9,7 @@
     d:DesignHeight="50"
     d:DesignWidth="300">
     
-    <Grid>
+    <Grid Margin="0,0,0,50">
         <Canvas>
             <Rectangle Name="colorRect" Fill="#FF000000" Margin="0,0,0,0" HorizontalAlignment="Left" Height="30" Width="30" VerticalAlignment="Top" />
             <Viewbox HorizontalAlignment="Left" Margin="40,0,0,0" VerticalAlignment="Top">

@@ -333,12 +333,16 @@ namespace HarvardShuttle.Data
 
         public DataSource()
         {
-            String ITEM_CONTENT = String.Format("Item Content: {0}\n\n{0}\n\n{0}\n\n{0}\n\n{0}\n\n{0}\n\n{0}",
-                        "Curabitur class aliquam vestibulum nam curae maecenas sed integer cras phasellus suspendisse quisque donec dis praesent accumsan bibendum pellentesque condimentum adipiscing etiam consequat vivamus dictumst aliquam duis convallis scelerisque est parturient ullamcorper aliquet fusce suspendisse nunc hac eleifend amet blandit facilisi condimentum commodo scelerisque faucibus aenean ullamcorper ante mauris dignissim consectetuer nullam lorem vestibulum habitant conubia elementum pellentesque morbi facilisis arcu sollicitudin diam cubilia aptent vestibulum auctor eget dapibus pellentesque inceptos leo egestas interdum nulla consectetuer suspendisse adipiscing pellentesque proin lobortis sollicitudin augue elit mus congue fermentum parturient fringilla euismod feugiat");
-
-            var group1 = new DataGroup("Group-1",
-                    "From",
+            var group1 = new DataGroup("Fav-Group",
+                    "Favorite Trips",
                     "Group Subtitle: 1",
+                    "Assets/LightGraySmall.png",
+                    "Group Description");
+            this.AllGroups.Add(group1); 
+            
+            var group2 = new DataGroup("All-Group",
+                    "From",
+                    "Group Subtitle: 2",
                     "Assets/DarkGray.png",
                     "Group Description: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus tempor scelerisque lorem in vehicula. Aliquam tincidunt, lacus ut sagittis tristique, turpis massa volutpat augue, eu rutrum ligula ante a ante");
 
@@ -346,17 +350,10 @@ namespace HarvardShuttle.Data
             int len = locations.Count;
             for (int i = 0; i < len; i++)
             {
-                String uid = "Group-1-Item-"+(i + 1).ToString();
+                String uid = "All-Group-Item-"+(i + 1).ToString();
                 string path = "StopImages/" + locations[i].Replace(" ", "").Replace("-",""). ToLower().ToString() + ".jpg";
-                group1.Items.Add(new DataItem(uid, locations[i], "", path, "", "", group1));
+                group2.Items.Add(new DataItem(uid, locations[i], "", path, "", "", group2));
             }
-            this.AllGroups.Add(group1);
-
-            var group2 = new DataGroup("Group-2",
-                    "Favorite Trips",
-                    "Group Subtitle: 2",
-                    "Assets/LightGraySmall.png",
-                    "Group Description: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus tempor scelerisque lorem in vehicula. Aliquam tincidunt, lacus ut sagittis tristique, turpis massa volutpat augue, eu rutrum ligula ante a ante");
             this.AllGroups.Add(group2);
         }
 
@@ -364,7 +361,7 @@ namespace HarvardShuttle.Data
         {
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(xml);
-            DataGroup favsGroup = this.AllGroups[1];// DataSource.GetGroup("Group-2");
+            DataGroup favsGroup = this.AllGroups[0];
             favsGroup.Items.Clear();
 
             int i = 1;
@@ -373,8 +370,7 @@ namespace HarvardShuttle.Data
                 string origin = elem.GetAttribute("origin");
                 string dest = elem.GetAttribute("dest");
 
-                DataItem item = new DataItem("Group-2-Item-"+i.ToString(), origin, dest, "", "from "+origin+" to "+dest, "", favsGroup);
-                //DataSource.GetGroup("Group-2").Items.Add(item);
+                DataItem item = new DataItem("Fav-Group-Item-"+i.ToString(), origin, dest, "", "from "+origin+" to "+dest, "", favsGroup);
                 favsGroup.Items.Add(item);
                 
                 i++;

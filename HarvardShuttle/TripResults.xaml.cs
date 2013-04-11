@@ -87,8 +87,10 @@ namespace HarvardShuttle
             UpdateOriginDest(currOrigin, currDest);
 
             // grab the route map (route id -> (name, color, segment list)
+            commonRouteIDsColors = new Dictionary<string, string>();
             Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap;
             routeMap = await PopulateUI();
+            ThreadPoolTimer uiUpdaterTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateUI, TimeSpan.FromSeconds(30));
             if (routeMap == null)
                 return;
 
@@ -101,66 +103,20 @@ namespace HarvardShuttle
 
             // update color codes on UI
             foreach (var key in commonRouteIDsColors.Keys) {
-                //string name = await MainDataStore.GetRouteName(key);
                 string name = routeMap[key].Item1;
                 this.ColorCodePanel.Children.Add(new ColorCodeBox(commonRouteIDsColors[key], name));
             }
 
             // plot shuttles
-            List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
-            AddShuttles(shuttleLocs);
+            List<Tuple<string, Point>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
+            if (shuttleLocs != null) // there is internet
+                AddShuttles(shuttleLocs);
+            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateShuttles, TimeSpan.FromMilliseconds(2500));
 
             FadeInMap();
-
-            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateShuttles, TimeSpan.FromMilliseconds(2500));
-            ThreadPoolTimer uiUpdaterTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateUI, TimeSpan.FromSeconds(60));
         }
 
-        private async Task<Dictionary<string, Tuple<string, string, List<LocationCollection>>>> PopulateUI()
-        {
-
-            this.estimateBox.Text = await Task<string>.Run(() => MainDataStore.GetArrivalEstimates(currOrigin, currDest));
-            this.estimatedMinutesTextBlock.Text = "minutes";
-
-            // Update the schedule asynchronously
-            DataStore.Scheduler.CreateSchedule(currOrigin, currDest, this.ResultsList, this.Height, this.numMinutesTextBlock, this.minutesTextBlock);
-
-            if (estimateBox.Text != "") {
-                // if boardingTime > scheduledTime, changed boarding box to say "Probably leaving in (may need to span more columns)
-                if (EstimatedWaitGreaterThanScheduledWait()) {
-                    this.boardingTextBlock.Visibility = Visibility.Collapsed;
-                    this.realEstimateTextBlock.Text = "Will probably arrive in";
-                    this.realEstimateTextBlock.Visibility = Visibility.Visible;
-                }
-                else {
-                    this.boardingTextBlock.Visibility = Visibility.Visible;
-                }
-            }
-            else {
-                this.realEstimateTextBlock.Visibility = Visibility.Visible;
-                this.boardingTextBlock.Visibility = Visibility.Collapsed;
-                this.estimateBox.Visibility = Visibility.Collapsed;
-                this.estimatedMinutesTextBlock.Visibility = Visibility.Collapsed;
-                this.shuttleMap.Visibility = Visibility.Collapsed;
-                this.notRunningTextBlock.Visibility = Visibility.Visible;
-                this.notRunningTextBlock2.Visibility = Visibility.Visible;
-                return null;
-            }
-
-            Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap;
-            routeMap = await MainDataStore.GetRoutes(currOrigin, currDest);
-
-            // if there are no routes, hide map and color code, replace with message that there are no routes currently running
-            if (routeMap.Keys.Count == 0) {
-                this.shuttleMap.Visibility = Visibility.Collapsed;
-                this.ColorCodePanel.Visibility = Visibility.Collapsed;
-                // display message that no routes are running
-                return null;
-            }
-
-            return routeMap;
-        }
-
+        #region UI Updaters
         private bool EstimatedWaitGreaterThanScheduledWait()
         {
             string estimateUnits = this.estimatedMinutesTextBlock.Text;
@@ -173,8 +129,144 @@ namespace HarvardShuttle
 
             double estimate = Double.Parse(this.estimateBox.Text);
             double scheduled = Double.Parse(this.numMinutesTextBlock.Text);
-            
+
             return (estimate > scheduled);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="scheduleResults"></param>
+        /// <param name="numMinutes"></param>
+        /// <param name="minutes"></param>
+        /// <param name="estimateTextBlockText"></param>
+        /// <returns>true if running, false otherwise </returns>
+        private bool UpdateTextBoxes(List<string> scheduleResults, string numMinutes, string minutes, string estimateTextBlockText)
+        {
+            if (ResultsList.Items.Count == 0)
+                foreach (string s in scheduleResults)
+                    this.ResultsList.Items.Add(s);
+            // potentially dangerous...
+            else 
+                for (int i = 0; i < scheduleResults.Count; i++)
+                    this.ResultsList.Items[i] = scheduleResults[i];
+
+            this.numMinutesTextBlock.Text = numMinutes;
+            this.minutesTextBlock.Text = minutes;
+            this.estimateBox.Text = estimateTextBlockText;
+            this.estimatedMinutesTextBlock.Text = "minutes";
+
+            if (estimateBox.Text != "") {
+                // if boardingTime > scheduledTime, changed boarding box to say "Probably leaving in (may need to span more columns)
+                if (EstimatedWaitGreaterThanScheduledWait()) {
+                    this.boardingTextBlock.Visibility = Visibility.Collapsed;
+                    this.realEstimateTextBlock.Text = "Will probably arrive in";
+                    this.realEstimateTextBlock.Visibility = Visibility.Visible;
+                }
+                else {
+                    this.boardingTextBlock.Visibility = Visibility.Visible;
+                    this.realEstimateTextBlock.Visibility = Visibility.Collapsed;
+                }
+                this.notRunningTextBlock.Visibility = Visibility.Collapsed;
+                this.notRunningTextBlock.Visibility = Visibility.Collapsed;
+            }
+            else {
+                this.realEstimateTextBlock.Visibility = Visibility.Visible;
+                this.boardingTextBlock.Visibility = Visibility.Collapsed;
+                this.estimateBox.Visibility = Visibility.Collapsed;
+                this.estimatedMinutesTextBlock.Visibility = Visibility.Collapsed;
+                this.shuttleMap.Visibility = Visibility.Collapsed;
+                this.notRunningTextBlock.Visibility = Visibility.Visible;
+                this.notRunningTextBlock2.Visibility = Visibility.Visible;
+                return false;
+            }
+            return true;
+        }
+
+        private Dictionary<string, Tuple<string, string, List<LocationCollection>>> 
+            ConvertToRouteMap(Dictionary<string, Tuple<string, string, List<List<Point>>>> routeMap2)
+        {
+            Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap = new Dictionary<string, Tuple<string, string, List<LocationCollection>>>();
+            foreach (var k in routeMap2.Keys) {
+                var val = routeMap2[k];
+                List<List<Point>> locations = val.Item3;
+                List<LocationCollection> locs = new List<LocationCollection>();
+                foreach (var list in locations) {
+                    LocationCollection col = new LocationCollection();
+                    foreach (var loc in list) {
+                        Location l = new Location(loc.X, loc.Y);
+                        col.Add(l);
+                    }
+                    locs.Add(col);
+                }
+                routeMap[k] = Tuple.Create<string, string, List<LocationCollection>>(val.Item1, val.Item2, locs);
+            }
+            return routeMap;
+        }
+
+        private async Task<Dictionary<string, Tuple<string, string, List<LocationCollection>>>> PopulateUI()
+        {
+            // Grab arrival estimates and the schedule
+            string estimateTextBlockText = await Task<string>.Run(() => MainDataStore.GetArrivalEstimates(currOrigin, currDest));
+            Tuple<List<string>, string, string> scheduleResults = await DataStore.Scheduler.CreateSchedule(currOrigin, currDest);
+
+            // Update the UI
+            bool isRunning = UpdateTextBoxes(scheduleResults.Item1, scheduleResults.Item2, scheduleResults.Item3, estimateTextBlockText);
+            if (!isRunning)
+                return null;
+
+            // Create a route map for updating the color code and the routes
+            Dictionary<string, Tuple<string, string, List<List<Point>>>> routeMap2;
+            routeMap2 = await MainDataStore.GetRoutes(currOrigin, currDest);
+            Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap = ConvertToRouteMap(routeMap2);
+
+            // update the color code UI
+            // if there are no routes, hide map and color code, replace with message that there are no routes currently running
+            if (routeMap.Keys.Count == 0) {
+                this.shuttleMap.Visibility = Visibility.Collapsed;
+                this.ColorCodePanel.Visibility = Visibility.Collapsed;
+                this.notRunningTextBlock.Visibility = Visibility.Visible;
+                this.notRunningTextBlock2.Visibility = Visibility.Visible;
+                return null;
+            }
+
+            return routeMap;
+        }
+
+        private async void UpdateUI(ThreadPoolTimer timer)
+        {
+            // Perform the data computations
+            string estimateTextBlockText = await Task<string>.Run(() => MainDataStore.GetArrivalEstimates(currOrigin, currDest));
+            Tuple<List<string>, string, string> scheduleResults = await DataStore.Scheduler.CreateSchedule(currOrigin, currDest);
+
+            // Update the UI
+            bool isRunning = false;
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
+                isRunning = UpdateTextBoxes(scheduleResults.Item1, scheduleResults.Item2, scheduleResults.Item3, estimateTextBlockText);
+            });
+            if (!isRunning)
+                return;
+
+            // Grab more data
+            Dictionary<string, Tuple<string, string, List<List<Point>>>> routeMap2;
+            routeMap2 = await MainDataStore.GetRoutes(currOrigin, currDest);
+
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
+                Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap = ConvertToRouteMap(routeMap2);
+                // If there are no routes, hide map and color code, replace with message that there are no routes currently running
+                if (routeMap.Keys.Count == 0) {
+                    this.shuttleMap.Visibility = Visibility.Collapsed;
+                    this.ColorCodePanel.Visibility = Visibility.Collapsed;
+                    this.notRunningTextBlock.Visibility = Visibility.Visible;
+                    this.notRunningTextBlock2.Visibility = Visibility.Visible;
+                }
+                else {
+                    // Update the cache of route IDs and their colors
+                    commonRouteIDsColors.Clear(); // race condition here with shuttles, but it will be resolved the period after if there's a failure
+                    foreach (var key in routeMap.Keys)
+                        commonRouteIDsColors[key] = routeMap[key].Item2;
+                }
+            });
         }
 
         private void FadeInMap()
@@ -189,35 +281,35 @@ namespace HarvardShuttle
             Storyboard.SetTargetProperty(anim, "UIElement.Opacity");
             story.Begin();
         }
-
-        private async void UpdateUI(ThreadPoolTimer timer)
-        {
-            await PopulateUI();
-        }
+        #endregion
 
         #region Shuttles
-        private void AddShuttles(List<Tuple<string, Location>> shuttleLocs)
+        private void AddShuttles(List<Tuple<string, Point>> shuttleLocs)
         {
-            foreach (var derp in shuttleLocs) {
+            if (shuttleLocs == null)
+                return;
+
+            foreach (var shutteLoc in shuttleLocs) {
                 ShuttlePin p = new ShuttlePin();
-                string routeColor = commonRouteIDsColors[derp.Item1];
+                string routeColor = commonRouteIDsColors[shutteLoc.Item1];
                 byte r = byte.Parse(routeColor.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
                 byte g = byte.Parse(routeColor.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
                 byte b = byte.Parse(routeColor.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
                 p.SetBackground(new SolidColorBrush(Color.FromArgb(255, r, g, b)));
 
+                Point pt = shutteLoc.Item2;
                 MapLayer.SetPositionAnchor(p, p.GetAnchor());
-                MapLayer.SetPosition(p, derp.Item2);
+                MapLayer.SetPosition(p, new Location(pt.X, pt.Y));
                 shuttleMap.Children.Add(p);
             }
         }
 
         private async void UpdateShuttles(ThreadPoolTimer timer)
         {
-            /* CAN I MOVE THE FIRST TWO LINES OUT OF THE DISPATCH THREAD?????? */
-            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, async () => {
-                List<Tuple<string, Location>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
-                var oldShuttles = shuttleMap.Children.ToList<UIElement>();
+            List<Tuple<string, Point>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
+            var oldShuttles = shuttleMap.Children.ToList<UIElement>();
+
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () => {
                 foreach (var oldShuttle in oldShuttles) {
                     if (oldShuttle.GetType() == typeof(ShuttlePin))
                         shuttleMap.Children.Remove(oldShuttle);

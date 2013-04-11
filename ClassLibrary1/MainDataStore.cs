@@ -10,6 +10,8 @@ using Windows.Data.Xml.Dom;
 using System.Xml;
 using System.IO;
 using Bing.Maps;
+using Windows.Foundation;
+using Windows.Networking.Connectivity;
 
 /// Format of xml
 /// <api_data_store>
@@ -36,6 +38,13 @@ namespace DataStore
         private static string storeFolder = "DataSource";
         private static StorageFolder installLoc = Windows.ApplicationModel.Package.Current.InstalledLocation;
 
+
+        private static bool IsThereInternet()
+        {
+            ConnectionProfile connections = NetworkInformation.GetInternetConnectionProfile();
+            bool internet = connections != null && connections.GetNetworkConnectivityLevel() == NetworkConnectivityLevel.InternetAccess;
+            return internet;
+        }
 
         private class TimeDictionary
         {
@@ -180,14 +189,14 @@ namespace DataStore
 
         private async static Task<JsonObject> GetSegments()
         {
+            if (!IsThereInternet())
+                return null;
+
             string url = "http://api.transloc.com/1.1/segments.json?agencies=" + agency;
             var client = new System.Net.Http.HttpClient();
             HttpResponseMessage response = client.GetAsync(url).Result;
             string responseString = await response.Content.ReadAsStringAsync();
             JsonObject obj = JsonObject.Parse(responseString);
-
-            Dictionary<string, List<Location>> segmentMap = new Dictionary<string, List<Location>>();
-
             JsonObject segmentArr = obj["data"].GetObject();
 
             return segmentArr;
@@ -199,7 +208,7 @@ namespace DataStore
             JsonObject obj = JsonObject.Parse(store);
             JsonArray routes = obj["routes"].GetArray();
 
-            string routeTitle = "fack";
+            string routeTitle = "default";
             foreach (JsonValue val in routes) {
                 JsonObject routeObj = val.GetObject();
                 if (routeObj["id"].GetString() == routeID) {
@@ -255,6 +264,9 @@ namespace DataStore
 
         public async static Task<string> GetArrivalEstimates(string origin, string dest)
         {
+            if (!IsThereInternet())
+                return "";
+
             Tuple<string, string, IEnumerable<string>> idsAndCommonRotes = await GetCommonRoutesAndStopIds(origin, dest);
             string origin_id = idsAndCommonRotes.Item1;
             string dest_id = idsAndCommonRotes.Item2;
@@ -303,15 +315,17 @@ namespace DataStore
         /// <param name="origin"></param>
         /// <param name="dest"></param>
         /// <returns>Dictionary that maps route ids to a tuple of the route name, its color, and a list of segment collections</returns>
-        public async static Task<Dictionary<string, Tuple<string, string, List<LocationCollection>>>> GetRoutes(string origin, string dest)
+        public async static Task<Dictionary<string, Tuple<string, string, List<List<Point>>>>> GetRoutes(string origin, string dest)
         {
             bool checkForAllRoutes = (origin == "" && dest == "");
 
             Tuple<string, string, IEnumerable<string>> idsAndCommonRotes = (checkForAllRoutes) ? null : await GetCommonRoutesAndStopIds(origin, dest);
             IEnumerable<string> common_routes = (checkForAllRoutes) ? new List<string>() : idsAndCommonRotes.Item3;
 
-            Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap = new Dictionary<string, Tuple<string, string, List<LocationCollection>>>();
+            if (!IsThereInternet())
+                return null;
 
+            Dictionary<string, Tuple<string, string, List<List<Point>>>> routeMap = new Dictionary<string, Tuple<string, string, List<List<Point>>>>();
             // Download routes and get json response
             string url = "http://api.transloc.com/1.1/routes.json?agencies=" + agency;
             var client = new System.Net.Http.HttpClient();
@@ -330,7 +344,7 @@ namespace DataStore
             foreach (JsonValue routeVal in routeArr) {
                 var route_obj = routeVal.GetObject();
                 string route_id = route_obj["route_id"].GetString();
-                List<LocationCollection> locationCollectionList = new List<LocationCollection>();
+                List<List<Point>> locationCollectionList = new List<List<Point>>();
 
                 // we found a route that's common to the origin and the destination
                 if (checkForAllRoutes || common_routes.Contains(route_id)) {
@@ -341,15 +355,10 @@ namespace DataStore
                         string segmentID = segment_id.Stringify().Replace("\"", "");
                         var derp = segmentMap[segmentID].Stringify();
                         string encoded_segment = segmentMap[segmentID].Stringify().Replace("\"", "").Replace("\\\\", "\\");
-                        List<Location> locations = DecodeLatLong(encoded_segment);
-                        LocationCollection segment_ids = new LocationCollection();
-                        //if (segmentID == "4028995") {
-                        foreach (Location l in locations)
-                            segment_ids.Add(l);
-                        locationCollectionList.Add(segment_ids);
-                        //}
+                        List<Point> locations = DecodeLatLong(encoded_segment);
+                        locationCollectionList.Add(locations);
                     }
-                    routeMap[route_id] = Tuple.Create<string, string, List<LocationCollection>>(name, color, locationCollectionList);
+                    routeMap[route_id] = Tuple.Create<string, string, List<List<Point>>>(name, color, locationCollectionList);
                 }
             }
             return routeMap;
@@ -389,7 +398,7 @@ namespace DataStore
             return Tuple.Create<string, string, IEnumerable<string>>(originID, destID, common_routes);
         }
 
-        public async static Task<List<string>> GetTimes(int num, string origin, string dest)
+        public async static Task<List<string>> GetTimesForSchedule(int num, string origin, string dest)
         {
             Tuple<string, string, IEnumerable<string>> routes_and_ids = await MainDataStore.GetCommonRoutesAndStopIds(origin, dest);
             string originID = routes_and_ids.Item1;
@@ -420,8 +429,11 @@ namespace DataStore
             return times;
         }
 
-        public async static Task<List<Tuple<string, Location>>> GetShuttles(List<string> routeIDs)
+        public async static Task<List<Tuple<string, Point>>> GetShuttles(List<string> routeIDs)
         {
+            if (!IsThereInternet())
+                return null;
+
             string routeStr = "";
             foreach (string route in routeIDs)
                 routeStr += route + ",";
@@ -436,27 +448,27 @@ namespace DataStore
             var derp = obj["data"].GetObject();
             var derp2 = derp[agency].GetArray();
 
-            List<Tuple<string, Location>> locsWithIDs = new List<Tuple<string, Location>>();
+            List<Tuple<string, Point>> locsWithIDs = new List<Tuple<string, Point>>();
             foreach (JsonValue val in derp2) {
                 var vehicleObj = val.GetObject();
                 var loc = vehicleObj["location"].GetObject();
                 double lat = loc["lat"].GetNumber();
                 double lng = loc["lng"].GetNumber();
                 string routeID = vehicleObj["route_id"].GetString();
-                locsWithIDs.Add(Tuple.Create<string, Location>(routeID, new Location(lat, lng)));
+                locsWithIDs.Add(Tuple.Create<string, Point>(routeID, new Point(lat, lng)));
             }
             return locsWithIDs;
         }
 
         #region Polyline
-        public static List<Location> DecodePolyline(string polyline)
+        public static List<Point> DecodePolyline(string polyline)
         {
             if (polyline == null || polyline == "")
                 return null;
 
             char[] polylinechars = polyline.ToCharArray();
             int index = 0;
-            List<Location> locations = new List<Location>();
+            List<Point> locations = new List<Point>();
             int currentLat = 0;
             int currentLng = 0;
             int next5bits;
@@ -494,7 +506,7 @@ namespace DataStore
 
                 double lat = Convert.ToDouble(currentLat) / 100000.0;
                 double lng = Convert.ToDouble(currentLng) / 100000.0;
-                Location loc = new Location(lat, lng);
+                Point loc = new Point(lat, lng);
                 locations.Add(loc);
             }
 
@@ -507,9 +519,9 @@ namespace DataStore
         /// </summary>
         /// <param name="encoded">encoded string</param>
         /// <returns>list of latlon</returns>
-        private static List<Location> DecodeLatLong(string encoded)
+        private static List<Point> DecodeLatLong(string encoded)
         {
-            List<Location> locs = new List<Location>();
+            List<Point> locs = new List<Point>();
 
             int index = 0;
             int lat = 0;
@@ -525,7 +537,7 @@ namespace DataStore
                 double latf = lat * 1e-5;
                 double lngf = lng * 1e-5;
 
-                Location l = new Location(latf, lngf);
+                Point l = new Point(latf, lngf);
 
                 locs.Add(l);
             }

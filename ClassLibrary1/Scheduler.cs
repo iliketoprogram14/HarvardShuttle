@@ -26,14 +26,17 @@ namespace DataStore
         private static int maxListings = 30;
         private static int maxNotifications = 15;
 
-        public async static void CreateSchedule(string new_origin, string new_dest, ListView results, double height, TextBlock numMinutes, TextBlock units)
+        public async static Task<Tuple<List<string>, string, string>> CreateSchedule(string new_origin, string new_dest)
         {
-            await CallService(new_origin, new_dest, results, numMinutes, units);
-            /*results.Height = (results.Items.Count * 20 < height) ?
-                results.Items.Count * 40 : height;*/
-            //results.Height = results.Children.Count * 40;
-            results.FontSize = 40;
+            List<string> newResults = new List<string>();
+            string newNumMinutes = "";
+            string newUnits = "";
+
+            Tuple<string, string> serviceResults = await CallService(new_origin, new_dest, newResults);
+            newNumMinutes = serviceResults.Item1;
+            newUnits = serviceResults.Item2;
             UpdateLastOriginDest(new_origin, new_dest);
+            return Tuple.Create<List<string>, string, string>(newResults, newNumMinutes, newUnits);
         }
 
         public async static Task CreateExtendedSchedule()
@@ -46,7 +49,7 @@ namespace DataStore
             string origin = doc.GetElementsByTagName("origin")[0].InnerText;
             string dest = doc.GetElementsByTagName("dest")[0].InnerText;
 
-            Task.WaitAll(CallService(origin, dest, null, null, null));
+            Task.WaitAll(CallService(origin, dest, null));
         }
         
         private static int GetNewMinuteCountdown(string timeStr)
@@ -82,12 +85,12 @@ namespace DataStore
             await FileIO.WriteTextAsync(file, xml);
         }
 
-        private async static Task CallService(string origin, string dest, ListView results, TextBlock numMinutes, TextBlock units)
+        private async static Task<Tuple<string, string>> CallService(string origin, string dest, List<string> results)
         {
-            List<string> times = await MainDataStore.GetTimes(20, origin, dest);
-            // write the first trip to the textblock
-            // update the resultsList and its height
-
+            string newNumMinutes = "";
+            string newUnits = "";
+            
+            List<string> times = await MainDataStore.GetTimesForSchedule(20, origin, dest);
             TileUpdater updater = CreateNewTileUpdater();
 
             int minuteCountdown = 0;
@@ -99,8 +102,11 @@ namespace DataStore
 
                 // add listings to main UI
                 if (results != null) {
-                    if (numNotifications == 0)
-                        SetCountdownBox(numMinutes, units, minuteCountdown);
+                    if (numNotifications == 0) {
+                        Tuple<string, string> countdownBoxResults = SetCountdownBox(minuteCountdown);
+                        newNumMinutes = countdownBoxResults.Item1;
+                        newUnits = countdownBoxResults.Item2;
+                    }
                     else
                         AddListing(minuteCountdown, results);
                     numListings++;
@@ -114,11 +120,13 @@ namespace DataStore
                     break;
             }
 
-            if (results != null && results.Items.Count == 0) {
+            if (results != null && results.Count == 0) {
                 TextBlock block = new TextBlock();
                 block.Text = "No further times scheduled.";
-                results.Items.Add("No further times scheduled.");
+                results.Add("No further times scheduled.");
             }
+
+            return Tuple.Create<string, string>(newNumMinutes, newUnits);
         }
 
         private static bool IsThereInternet()
@@ -142,7 +150,7 @@ namespace DataStore
             return minuteCountdown;
         }
 
-        private static void AddListing(int minuteCountdown, ListView resultsList)
+        private static void AddListing(int minuteCountdown, List<string> resultsList)
         {
             int hourCountdown = minuteCountdown / 60;
             minuteCountdown = minuteCountdown % 60;
@@ -150,10 +158,7 @@ namespace DataStore
             string msg = (hourCountdown == 0) ? "" : hourCountdown.ToString() + " hour" + ((hourCountdown == 1) ? " " : "s ");
             msg += minuteCountdown.ToString() + " minute" + ((minuteCountdown == 1) ? "" : "s");
 
-            TextBlock block = new TextBlock();
-            block.Text = msg;
-            block.FontSize = 20;
-            resultsList.Items.Add(msg);
+            resultsList.Add(msg);
 
             //resultsList.Items.Add(msg);
         }
@@ -223,17 +228,20 @@ namespace DataStore
             }
         }
 
-        private static void SetCountdownBox(TextBlock numMinutesBox, TextBlock unitsBox, int minutes)
+        private static Tuple<string, string> SetCountdownBox(int minutes)
         {
+            string newNumMinutes = "";
+            string newUnits = "";
             if (minutes < 100) {
-                numMinutesBox.Text = minutes.ToString();
-                unitsBox.Text = "minutes";
+                newNumMinutes = minutes.ToString();
+                newUnits = "minutes";
             }
             else {
                 double hours = Math.Round((double)minutes / 60.0, 1);
-                numMinutesBox.Text = hours.ToString();
-                unitsBox.Text = "hours";
+                newNumMinutes = hours.ToString();
+                newUnits = "hours";
             }
+            return Tuple.Create<string, string>(newNumMinutes, newUnits);
         }
 
         private static string GenTileString(int minutes)

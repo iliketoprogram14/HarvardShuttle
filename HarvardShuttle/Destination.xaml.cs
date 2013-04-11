@@ -47,7 +47,7 @@ namespace HarvardShuttle
             DataGroup destGroup = new DataGroup("Dest-Group", "To", "", "Assets/DarkGray.png", "");
             HashSet<string> destSet = await MainDataStore.GetDestinations(origin.Title);
 
-            DataGroup itemGroup = DataSource.GetGroup("Group-1");
+            DataGroup itemGroup = DataSource.GetGroup("All-Group");
             foreach (DataItem item in itemGroup.Items)
                 if (destSet.Contains(item.Title))
                     destGroup.Items.Add(item);

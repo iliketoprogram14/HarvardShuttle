@@ -101,7 +101,7 @@ namespace HarvardShuttle
             // Navigate to the appropriate destination page, configuring the new page
             // by passing required information as a navigation parameter
             var item = (DataItem)e.ClickedItem;
-            if (item.Group.UniqueId.Equals("Group-1"))
+            if (item.Group.UniqueId.Equals("All-Group"))
                 this.Frame.Navigate(typeof(Destination), item);
             else {
                 string origin = item.Title;
@@ -130,16 +130,19 @@ namespace HarvardShuttle
         {
             bottomAppBar.IsOpen = false;
 
+            // Get selected item
             var item = (DataItem)this.itemGridView.SelectedItem;
             string origin = item.Title;
             string dest = item.Subtitle;
 
+            // Remove it from the observable collection
             var g = (ObservableCollection<DataGroup>)this.groupedItemsViewSource.Source;
-            var groupa = g[1];
+            var groupa = g[0];
             var itemsa = groupa.Items;
             var idx = itemsa.IndexOf(item);
             itemsa.Remove(item);
 
+            // Update the favorite store
             StorageFile file = await localFolder.GetFileAsync(favoritesStorePath);
             string toRemove = "<trip origin=\"" + origin + "\" dest=\"" + dest + "\"></trip>";
             string xml = await FileIO.ReadTextAsync(file);
