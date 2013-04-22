@@ -116,10 +116,17 @@ namespace HarvardShuttle
         private void onCommandsRequested(SettingsPane sender, SettingsPaneCommandsRequestedEventArgs args)
         {
             args.Request.ApplicationCommands.Add(new SettingsCommand("help", "Help", Handler));
+            args.Request.ApplicationCommands.Add(new SettingsCommand("privacy", "Privacy policy", PrivacyHandler));
         }
 
         private void Handler(IUICommand command)
         {
+            InitPopup("help");
+        }
+
+        private void InitPopup(string type)
+        {
+
             _popUp = new Popup {
                 Width = WIDTH,
                 Height = Window.Current.Bounds.Height,
@@ -129,9 +136,15 @@ namespace HarvardShuttle
             _popUp.Closed += OnPopupClosed;
 
             Window.Current.Activated += OnWindowActivated;
-            _popUp.Child = new SettingsFlyout { Width = WIDTH, Height = Window.Current.Bounds.Height };
+            _popUp.Child = new SettingsFlyout(type) { Width = WIDTH, Height = Window.Current.Bounds.Height };
             _popUp.SetValue(Canvas.LeftProperty, SettingsPane.Edge == SettingsEdgeLocation.Right ? (Window.Current.Bounds.Width - WIDTH) : 0);
             _popUp.SetValue(Canvas.TopProperty, 0);
+
+        }
+
+        private void PrivacyHandler(IUICommand command)
+        {
+            InitPopup("privacy");
         }
 
         private void OnWindowActivated(object sender, WindowActivatedEventArgs e)

@@ -20,7 +20,6 @@ namespace TileBackground
         public void Run(IBackgroundTaskInstance taskInstance)
         {
             BackgroundTaskDeferral deferral = taskInstance.GetDeferral();
-            //Scheduler.CreateExtendedSchedule();
             Task.WaitAll(DataStore.Scheduler.CreateExtendedSchedule());
             deferral.Complete();
         }

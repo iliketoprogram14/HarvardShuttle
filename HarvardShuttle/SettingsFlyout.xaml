@@ -19,17 +19,17 @@
             <!-- Header area panel -->
             <Grid Background="#8c1717" Grid.Row="0">
                 <Grid Margin="20,20,17,13">
-                <Grid.Transitions>
-                    <TransitionCollection>
-                        <EntranceThemeTransition FromHorizontalOffset="50" />
-                    </TransitionCollection>
-                </Grid.Transitions>
-                <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
+                    <Grid.Transitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition FromHorizontalOffset="50" />
+                        </TransitionCollection>
+                    </Grid.Transitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*" />
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <Button Click="Button_Click_1" Margin="0,3,0,0" Grid.Column="0" HorizontalAlignment="Left" Style="{StaticResource BackButtonStyle}"/>
-                    <TextBlock Margin="75,5,0,0" Grid.Column="0" FontFamily="Segoe UI" FontWeight="SemiLight" FontSize="24.6667" Text="Help" HorizontalAlignment="Left" />
+                    <TextBlock Name="Title" Margin="70,5,0,0" Grid.Column="0" FontFamily="Segoe UI" FontWeight="SemiLight" FontSize="24.6667" Text="Privacy policy" HorizontalAlignment="Left" />
                     <Image Source="/Assets/StoreLogo.png" HorizontalAlignment="Right" Grid.Column="2" Margin="0,0,6,0" />
                 </Grid>
             </Grid>
@@ -42,17 +42,16 @@
                         </TransitionCollection>
                     </Grid.Transitions>
                     <StackPanel>
-                        <TextBlock FontWeight="Bold" Text="Find a trip!" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}" HorizontalAlignment="Left" Foreground="Black"/>
-                        <TextBlock TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}"
+                        <TextBlock Name="H1" FontWeight="Bold" Text="Find a trip!" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}" HorizontalAlignment="Left" Foreground="Black"/>
+                        <TextBlock Name="Body1" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}"
                                    Text="Find a trip by selecting a 'from' location and then a 'to' location. The schedule for the routes that hit both of those stops will appear. Harvard Shuttle's tile will update automatically with countdowns of shuttle arrivals to the 'from' location." Foreground="Black"/>
-                        <TextBlock Margin="0,20,0,0" FontWeight="Bold" Text="Favorite Trips" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}" HorizontalAlignment="Left" Foreground="Black"/>
-                        <TextBlock TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}"
-                                   Text="After finding a trip, you can favorite that trip by right-clicking the anywhere on the trip screen (or swiping from the top or bottom on a touch screen). The newly favorited trip will then appear on the front page to the right of the 'from' locations." Foreground="Black"/>
-                        <TextBlock Margin="0,20,0,0" FontWeight="Bold" Text="Live tile" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}" HorizontalAlignment="Left" Foreground="Black"/>
-                        <TextBlock TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}"
+                        <TextBlock Name="H2" Margin="0,20,0,0" FontWeight="Bold" Text="Favorite Trips" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}" HorizontalAlignment="Left" Foreground="Black"/>
+                        <TextBlock Name="Body2" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}" Foreground="Black" IsTextSelectionEnabled="False" Text="After finding a trip, you can favorite that trip by right-clicking the anywhere on the trip screen (or swiping from the top or bottom on a touch screen). The newly favorited trip will then appear on the front page to the right of the 'from' locations." />
+                        <TextBlock Name="H3" Margin="0,20,0,0" FontWeight="Bold" Text="Live tile" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}" HorizontalAlignment="Left" Foreground="Black"/>
+                        <TextBlock Name="Body3" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}"
                                    Text="After finding a trip, Harvard Shuttle's start screen tile will update automatically with countdowns of shuttle arrivals to the 'from' location for the trip." Foreground="Black"/>
-                        <TextBlock Margin="0,20,0,0" FontWeight="Bold" Text="About" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}" HorizontalAlignment="Left" Foreground="Black"/>
-                        <TextBlock TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}"
+                        <TextBlock Name="H4" Margin="0,20,0,0" FontWeight="Bold" Text="About" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}" HorizontalAlignment="Left" Foreground="Black"/>
+                        <TextBlock Name="Body4" TextWrapping="Wrap" Style="{StaticResource BasicTextStyle}"
                                    Text="This app uses the Transloc Open API for live updates and the Shuttleboy API for future shuttle times." Foreground="Black"/>
                     </StackPanel>
                 </Grid>

@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/2010/manifest">
-  <Identity Name="20653RandyMiller.HarvardShuttle" Publisher="CN=5CFFA44D-69BB-4D28-B2B2-98D320FBD693" Version="1.0.0.0" />
+  <Identity Name="20653RandyMiller.HarvardShuttle" Publisher="CN=5CFFA44D-69BB-4D28-B2B2-98D320FBD693" Version="1.0.0.3" />
   <Properties>
     <DisplayName>Harvard Shuttle</DisplayName>
     <PublisherDisplayName>Randy Miller</PublisherDisplayName>
