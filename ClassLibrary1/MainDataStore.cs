@@ -131,9 +131,11 @@ namespace DataStore
                         derp = timeDict[countdownFromOrig];
                     derp.Add(Tuple.Create<string, JsonObject>(minTime, obj));
                     timeDict[countdownFromOrig] = derp;
+                    derp = null; // cleanup
                     return true;
                 }
 
+                // clean up
 
                 return false;
             }
@@ -164,8 +166,13 @@ namespace DataStore
                         timeDict.Remove(countdown);
                     else
                         timeDict[countdown] = blegh;
+                    blegh = null;
                     break;
                 }
+
+                if (nextTimeStr == "")
+                    return ""; // this actually can happen sometimes
+
                 var fields = nextTimeStr.Split(':');
                 var hr = Int32.Parse(fields[0]);
                 var min = Int32.Parse(fields[1]);
@@ -173,6 +180,10 @@ namespace DataStore
                 currTimeInt = nextTimeInt;
                 currTime = nextTimeStr;
                 AddObj(routeObj);
+
+                // clean up
+                routeObj = null;
+
                 return nextTimeStr;
             }
         }
@@ -183,6 +194,7 @@ namespace DataStore
                 var folder = await installLoc.GetFolderAsync(storeFolder);
                 StorageFile f = await folder.GetFileAsync(storePath);
                 cache = await FileIO.ReadTextAsync(f);
+                f = null;
             }
             return cache;
         }
@@ -198,6 +210,10 @@ namespace DataStore
             string responseString = await response.Content.ReadAsStringAsync();
             JsonObject obj = JsonObject.Parse(responseString);
             JsonObject segmentArr = obj["data"].GetObject();
+
+            // clean up
+            response = null;
+            client = null;
 
             return segmentArr;
         }
@@ -216,6 +232,9 @@ namespace DataStore
                     break;
                 }
             }
+
+            routes = null;
+            obj = null;
 
             return routeTitle;
         }
@@ -258,6 +277,11 @@ namespace DataStore
                         destSet.Add(stopTitle);
                 }
             }
+
+            // clean up
+            obj = null;
+            originRoutes = null;
+            idToTitle = null;
 
             return destSet;
         }
@@ -306,6 +330,13 @@ namespace DataStore
                 arrivalStr = minuteCountdown.ToString();
             }
 
+            // clean up
+            obj = null;
+            response = null;
+            client = null;
+            common_routes = null;
+            idsAndCommonRotes = null;
+
             return arrivalStr;
         }
 
@@ -322,8 +353,11 @@ namespace DataStore
             Tuple<string, string, IEnumerable<string>> idsAndCommonRotes = (checkForAllRoutes) ? null : await GetCommonRoutesAndStopIds(origin, dest);
             IEnumerable<string> common_routes = (checkForAllRoutes) ? new List<string>() : idsAndCommonRotes.Item3;
 
-            if (!IsThereInternet())
+            if (!IsThereInternet()) {
+                common_routes = null;
+                idsAndCommonRotes = null;
                 return null;
+            }
 
             Dictionary<string, Tuple<string, string, List<List<Point>>>> routeMap = new Dictionary<string, Tuple<string, string, List<List<Point>>>>();
             // Download routes and get json response
@@ -361,6 +395,15 @@ namespace DataStore
                     routeMap[route_id] = Tuple.Create<string, string, List<List<Point>>>(name, color, locationCollectionList);
                 }
             }
+
+            // clean up
+            segmentMap = null;
+            obj = null;
+            response = null;
+            client = null;
+            common_routes = null;
+            idsAndCommonRotes = null;
+
             return routeMap;
         }
 
@@ -394,8 +437,15 @@ namespace DataStore
                     break;
             }
             IEnumerable<string> common_routes = origin_routes.Intersect<string>(dest_routes);
+            Tuple<string, string, IEnumerable<string>> commonRoutesAndStopIds = Tuple.Create<string, string, IEnumerable<string>>(originID, destID, common_routes);
 
-            return Tuple.Create<string, string, IEnumerable<string>>(originID, destID, common_routes);
+            // clean up
+            common_routes = null;
+            origin_routes = null;
+            dest_routes = null;
+            obj = null;
+
+            return commonRoutesAndStopIds;
         }
 
         public async static Task<List<string>> GetTimesForSchedule(int num, string origin, string dest)
@@ -423,8 +473,16 @@ namespace DataStore
             List<string> times = new List<string>();
             while (times.Count < num) {
                 string nextTime = timeDict.PopAndUpdate();
+                if (nextTime == "") break; // this could happen if a user picks a trip that's only on weekends, but it's a weekday
                 times.Add(nextTime);
             }
+
+            // cleanup
+            routeJson = null;
+            obj = null;
+            routes = null;
+            routes_and_ids = null;
+            timeDict = null;
 
             return times;
         }
@@ -457,62 +515,17 @@ namespace DataStore
                 string routeID = vehicleObj["route_id"].GetString();
                 locsWithIDs.Add(Tuple.Create<string, Point>(routeID, new Point(lat, lng)));
             }
+
+            // cleanup
+            client = null;
+            derp = null;
+            derp2 = null;
+            obj = null;
+
             return locsWithIDs;
         }
 
         #region Polyline
-        public static List<Point> DecodePolyline(string polyline)
-        {
-            if (polyline == null || polyline == "")
-                return null;
-
-            char[] polylinechars = polyline.ToCharArray();
-            int index = 0;
-            List<Point> locations = new List<Point>();
-            int currentLat = 0;
-            int currentLng = 0;
-            int next5bits;
-            int sum;
-            int shifter;
-
-            while (index < polylinechars.Length) {
-                // calculate next latitude
-                sum = 0;
-                shifter = 0;
-                do {
-                    next5bits = (int)polylinechars[index++] - 63;
-                    sum |= (next5bits & 31) << shifter;
-                    shifter += 5;
-                } while (next5bits >= 32 && index < polylinechars.Length);
-
-                if (index >= polylinechars.Length)
-                    break;
-
-                currentLat += (sum & 1) == 1 ? ~(sum >> 1) : (sum >> 1);
-
-                //calculate next longitude
-                sum = 0;
-                shifter = 0;
-                do {
-                    next5bits = (int)polylinechars[index++] - 63;
-                    sum |= (next5bits & 31) << shifter;
-                    shifter += 5;
-                } while (next5bits >= 32 && index < polylinechars.Length);
-
-                if (index >= polylinechars.Length && next5bits >= 32)
-                    break;
-
-                currentLng += (sum & 1) == 1 ? ~(sum >> 1) : (sum >> 1);
-
-                double lat = Convert.ToDouble(currentLat) / 100000.0;
-                double lng = Convert.ToDouble(currentLng) / 100000.0;
-                Point loc = new Point(lat, lng);
-                locations.Add(loc);
-            }
-
-            return locations;
-        }
-
         /// <summary>
         /// decodes a string into a list of latlon objects
         /// from http://www.soulsolutions.com.au/Articles/Encodingforperformance.aspx
@@ -530,15 +543,13 @@ namespace DataStore
             int len = encoded.Length;
             while (index < len) {
                 lat += decodePoint(encoded, index, out index);
-                if (index < len) {
+                if (index < len)
                     lng += decodePoint(encoded, index, out index);
-                }
 
                 double latf = lat * 1e-5;
                 double lngf = lng * 1e-5;
 
                 Point l = new Point(latf, lngf);
-
                 locs.Add(l);
             }
 
@@ -561,16 +572,13 @@ namespace DataStore
             int minASCII = 63;
             int binaryChunkSize = 5;
             do {
-                //get binary encoding
+                //get binary encoding, shift, and move to next chunk
                 b = Convert.ToInt32(encoded[startindex++]) - minASCII;
-                //binary shift
                 result |= (b & 0x1f) << shift;
-                //move to next chunk
                 shift += binaryChunkSize;
             } while (b >= 0x20); //see if another binary value
-            //if negivite flip
+            // negative flip, and set output index
             int dlat = (((result & 1) > 0) ? ~(result >> 1) : (result >> 1));
-            //set output index
             finishindex = startindex;
             return dlat;
         }

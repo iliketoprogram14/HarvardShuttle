@@ -24,7 +24,7 @@ namespace DataStore
     {
         private static string store = "last_origin_dest.xml";
         private static int maxListings = 30;
-        private static int maxNotifications = 15;
+        private static int maxNotifications = 32;
 
         public async static Task<Tuple<List<string>, string, string>> CreateSchedule(string new_origin, string new_dest)
         {
@@ -91,6 +91,9 @@ namespace DataStore
             string newUnits = "";
             
             List<string> times = await MainDataStore.GetTimesForSchedule(20, origin, dest);
+            if (times.Count == 0)
+                return Tuple.Create<string, string>("", "");
+
             TileUpdater updater = CreateNewTileUpdater();
 
             int minuteCountdown = 0;

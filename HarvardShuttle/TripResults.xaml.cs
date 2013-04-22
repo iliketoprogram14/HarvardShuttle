@@ -46,6 +46,8 @@ namespace HarvardShuttle
         private string favoritesXmlCache;
         private StorageFile file;
         private Dictionary<string,string> commonRouteIDsColors;
+        private ThreadPoolTimer uiUpdaterTimer;
+        private ThreadPoolTimer PeriodicTimer;
 
         public TripResults()
         {
@@ -90,7 +92,7 @@ namespace HarvardShuttle
             commonRouteIDsColors = new Dictionary<string, string>();
             Dictionary<string, Tuple<string, string, List<LocationCollection>>> routeMap;
             routeMap = await PopulateUI();
-            ThreadPoolTimer uiUpdaterTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateUI, TimeSpan.FromSeconds(30));
+            uiUpdaterTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateUI, TimeSpan.FromSeconds(30));
             if (routeMap == null)
                 return;
 
@@ -111,9 +113,26 @@ namespace HarvardShuttle
             List<Tuple<string, Point>> shuttleLocs = await MainDataStore.GetShuttles(commonRouteIDsColors.Keys.ToList<string>());
             if (shuttleLocs != null) // there is internet
                 AddShuttles(shuttleLocs);
-            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateShuttles, TimeSpan.FromMilliseconds(2500));
+            PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(UpdateShuttles, TimeSpan.FromMilliseconds(2500));
 
             FadeInMap();
+
+            // clean up
+            shuttleLocs = null;
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+            if (PeriodicTimer != null)
+                PeriodicTimer.Cancel();
+            PeriodicTimer = null;
+            if (uiUpdaterTimer != null)
+                uiUpdaterTimer.Cancel();
+            uiUpdaterTimer = null;
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
 
         #region UI Updaters
@@ -209,6 +228,8 @@ namespace HarvardShuttle
                 this.shuttleMap.Visibility = Visibility.Visible;
             }
             else {
+                if (numMinutes == "")
+                    this.scheduledTextBlock.Text = "No routes within the next 24 hours.";
                 this.realEstimateTextBlock.Visibility = Visibility.Visible;
                 this.boardingTextBlock.Visibility = Visibility.Collapsed;
                 this.estimateBox.Visibility = Visibility.Collapsed;
@@ -234,10 +255,13 @@ namespace HarvardShuttle
                     foreach (var loc in list) {
                         Location l = new Location(loc.X, loc.Y);
                         col.Add(l);
+                        l = null;
                     }
                     locs.Add(col);
+                    col = null;
                 }
                 routeMap[k] = Tuple.Create<string, string, List<LocationCollection>>(val.Item1, val.Item2, locs);
+                locs = null;
             }
             return routeMap;
         }
@@ -265,8 +289,12 @@ namespace HarvardShuttle
                 this.ColorCodePanel.Visibility = Visibility.Collapsed;
                 this.notRunningTextBlock.Visibility = Visibility.Visible;
                 this.notRunningTextBlock2.Visibility = Visibility.Visible;
-                return null;
+                routeMap = null; // return null if there's nothing to show
             }
+
+            // clean up
+            routeMap2 = null;
+            scheduleResults = null;
 
             return routeMap;
         }
@@ -282,8 +310,10 @@ namespace HarvardShuttle
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
                 isRunning = UpdateTextBoxes(scheduleResults.Item1, scheduleResults.Item2, scheduleResults.Item3, estimateTextBlockText);
             });
-            if (!isRunning)
+            if (!isRunning) {
+                scheduleResults = null;
                 return;
+            }
 
             // Grab more data
             Dictionary<string, Tuple<string, string, List<List<Point>>>> routeMap2;
@@ -304,7 +334,14 @@ namespace HarvardShuttle
                     foreach (var key in routeMap.Keys)
                         commonRouteIDsColors[key] = routeMap[key].Item2;
                 }
+
+                // clean up
+                routeMap = null;
             });
+
+            // clean up
+            routeMap2 = null;
+            scheduleResults = null;
         }
 
         private void FadeInMap()
@@ -318,6 +355,10 @@ namespace HarvardShuttle
             Storyboard.SetTarget(anim, shuttleMap);
             Storyboard.SetTargetProperty(anim, "UIElement.Opacity");
             story.Begin();
+
+            // clean up
+            anim = null;
+            story = null;
         }
         #endregion
 
@@ -354,6 +395,10 @@ namespace HarvardShuttle
                 }
                 AddShuttles(shuttleLocs);
             });
+
+            // clean up
+            shuttleLocs = null;
+            oldShuttles = null;
         }
         #endregion
 
@@ -370,14 +415,17 @@ namespace HarvardShuttle
             polyline.Width = 8;
             shapeLayer.Shapes.Add(polyline);
             shuttleMap.ShapeLayers.Add(shapeLayer);
+
+            // clean up
+            polyline = null;
+            shapeLayer = null;
         }
 
         private double GetHash(LocationCollection collection)
         {
             double hash = 0;
-            foreach (Location loc in collection) {
+            foreach (Location loc in collection)
                 hash += loc.Latitude + loc.Longitude;
-            }
             return hash;
         }
 
@@ -392,12 +440,13 @@ namespace HarvardShuttle
                 foreach (LocationCollection collection in locs) {
                     double key = GetHash(collection);
                     List<string> idList = new List<string>();
-                    if (segmentToIdMap.ContainsKey(key)) {
+                    if (segmentToIdMap.ContainsKey(key))
                         idList = segmentToIdMap[key].Item2;
-                        Debug.WriteLine("oh hi there" + idList);
-                    }
                     idList.Add(routeId);
                     segmentToIdMap[key] = Tuple.Create<LocationCollection, List<string>>(collection, idList);
+
+                    // clean up
+                    idList = null;
                 }
             }
 
@@ -409,6 +458,7 @@ namespace HarvardShuttle
                     string routeColor = routeMap[routeId].Item2;
                     AddPolyline(routeColor, collection);
                 }
+                // there may be a segment shared by many routes
                 else {
                     int i = 0;
                     int n = idList.Count;
@@ -418,6 +468,7 @@ namespace HarvardShuttle
                     foreach (Location loc in collection) {
                         if (prevLoc != null) {
                             double dist = Math.Sqrt(Math.Pow((prevLoc.Longitude - loc.Longitude), 2) + Math.Pow((prevLoc.Latitude - prevLoc.Latitude), 2));
+                            // split up the segment pair into smaller segments
                             if (dist > maxDist) {
                                 int numSteps = (int)Math.Ceiling(dist / maxDist);
                                 double latDiff = (loc.Latitude - prevLoc.Latitude) / numSteps;
@@ -432,6 +483,11 @@ namespace HarvardShuttle
                                     string routeColor = routeMap[routeId].Item2;
                                     AddPolyline(routeColor, newLocCollection);
                                     i = (i + 1) % n;
+
+                                    // clean up
+                                    new_loc1 = null;
+                                    new_loc2 = null;
+                                    newLocCollection.Clear(); newLocCollection = null;
                                 }
                             }
                             else {
@@ -443,17 +499,21 @@ namespace HarvardShuttle
                                 string routeColor = routeMap[routeId].Item2;
                                 AddPolyline(routeColor, pair);
                                 totalDist += dist;
-                                Debug.WriteLine(dist);
                                 if (totalDist > maxDist) {
                                     totalDist = 0;
                                     i = (i + 1) % n;
                                 }
+                                pair = null; // clean up
                             }
                         }
                         prevLoc = loc;
                     }
+                    prevLoc = null; // clean up
                 }
             }
+            // clean up
+            segmentToIdMap.Clear();
+            segmentToIdMap = null;
         }
         #endregion
 
@@ -504,6 +564,9 @@ namespace HarvardShuttle
 
             isFav = favExists;
             UpdateButtonStyle();
+
+            // clean up
+            doc = null;
         }
 
         private void UpdateButtonStyle()
@@ -539,9 +602,10 @@ namespace HarvardShuttle
 
             IBackgroundTaskRegistration taskRegistration = builder.Register();
 
-            foreach (var task in BackgroundTaskRegistration.AllTasks) {
-                var derp = task.ToString();
-            }
+            // clean up
+            condition = null;
+            trigger = null;
+            builder = null;
         }
         #endregion
 
@@ -575,6 +639,9 @@ namespace HarvardShuttle
             isFav = !isFav;
             UpdateButtonStyle();
             await FileIO.WriteTextAsync(file, favoritesXmlCache);
+
+            // clean up
+            doc = null;
         }
         #endregion
     }

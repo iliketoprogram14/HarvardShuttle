@@ -623,11 +623,11 @@
 
         <Viewbox Name="MapCanvas" Margin="0,0,0,50" Grid.Row="2" Grid.Column="0" Grid.RowSpan="3" VerticalAlignment="Top" HorizontalAlignment="Center">
             <ScrollViewer VerticalScrollMode="Disabled" ZoomMode="Disabled" IsDoubleTapEnabled="False" IsHoldingEnabled="False" IsRightTapEnabled="False" IsTapEnabled="False" VerticalScrollBarVisibility="Hidden">
-                <Grid>
+                <Grid CacheMode="BitmapCache">
                     <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Width="1250" Height="1340" Stroke="Black" VerticalAlignment="Top" Canvas.ZIndex="1" Opacity="0" />
                     <Maps:Map Name="shuttleMap" Credentials="AhYTEH1C_7wVcn9raY0Lw0wVxc4GAySSK2ZgvXhwvpvzxjfPcWNwllRu3001Rasf" HorizontalAlignment="Center" 
                     		VerticalAlignment="Top" ZoomLevel="16" ShowScaleBar="False" ShowNavigationBar="False" ShowBuildings="False"
-                    		ViewRestriction="MapOnly" ManipulationMode="None" Canvas.ZIndex="0" Width="1250" Height="1340" Opacity="0">
+                    		ViewRestriction="MapOnly" ManipulationMode="None" Canvas.ZIndex="0" Width="1250" Height="1340" Opacity="0" CacheMode="BitmapCache">
                         <Maps:Map.Center>
                             <Maps:Location Latitude="42.373100" Longitude="-71.118772"/>
                         </Maps:Map.Center>
