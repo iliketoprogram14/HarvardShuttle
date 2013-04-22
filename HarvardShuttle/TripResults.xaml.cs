@@ -119,6 +119,7 @@ namespace HarvardShuttle
 
             // clean up
             shuttleLocs = null;
+            routeMap = null;
         }
 
         protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -130,9 +131,8 @@ namespace HarvardShuttle
             if (uiUpdaterTimer != null)
                 uiUpdaterTimer.Cancel();
             uiUpdaterTimer = null;
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
+            foreach (var child in shuttleMap.Children)
+                shuttleMap.Children.Remove(child);
         }
 
         #region UI Updaters
@@ -377,9 +377,12 @@ namespace HarvardShuttle
                 p.SetBackground(new SolidColorBrush(Color.FromArgb(255, r, g, b)));
 
                 Point pt = shutteLoc.Item2;
+                Location l = new Location(pt.X, pt.Y);
                 MapLayer.SetPositionAnchor(p, p.GetAnchor());
                 MapLayer.SetPosition(p, new Location(pt.X, pt.Y));
                 shuttleMap.Children.Add(p);
+                l = null;
+                p = null;
             }
         }
 
@@ -397,8 +400,8 @@ namespace HarvardShuttle
             });
 
             // clean up
-            shuttleLocs = null;
             oldShuttles = null;
+            shuttleLocs = null;
         }
         #endregion
 
