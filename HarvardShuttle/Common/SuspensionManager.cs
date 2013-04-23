@@ -59,21 +59,21 @@ namespace HarvardShuttle.Common
         {
             try
             {
-            // Save the navigation state for all registered frames
-            foreach (var weakFrameReference in _registeredFrames)
-            {
-                Frame frame;
-                if (weakFrameReference.TryGetTarget(out frame))
+                // Save the navigation state for all registered frames
+                foreach (var weakFrameReference in _registeredFrames)
                 {
-                    SaveFrameNavigationState(frame);
+                    Frame frame;
+                    if (weakFrameReference.TryGetTarget(out frame))
+                    {
+                        SaveFrameNavigationState(frame);
+                    }
                 }
-            }
 
-            // Serialize the session state synchronously to avoid asynchronous access to shared
-            // state
-            MemoryStream sessionData = new MemoryStream();
-            DataContractSerializer serializer = new DataContractSerializer(typeof(Dictionary<string, object>), _knownTypes);
-            serializer.WriteObject(sessionData, _sessionState);
+                // Serialize the session state synchronously to avoid asynchronous access to shared
+                // state
+                MemoryStream sessionData = new MemoryStream();
+                DataContractSerializer serializer = new DataContractSerializer(typeof(Dictionary<string, object>), _knownTypes);
+                serializer.WriteObject(sessionData, _sessionState);
             
                 // Get an output stream for the SessionState file and write the state asynchronously
                 StorageFile file = await ApplicationData.Current.LocalFolder.CreateFileAsync(sessionStateFilename, CreationCollisionOption.ReplaceExisting);
@@ -240,6 +240,7 @@ namespace HarvardShuttle.Common
         private static void SaveFrameNavigationState(Frame frame)
         {
             var frameState = SessionStateForFrame(frame);
+            var navState = frame.GetNavigationState();
             frameState["Navigation"] = frame.GetNavigationState();
         }
     }

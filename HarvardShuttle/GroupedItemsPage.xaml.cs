@@ -68,6 +68,12 @@ namespace HarvardShuttle
                 asyncStatus = await BackgroundExecutionManager.RequestAccessAsync();
         }
 
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+            this.itemGridView.SelectionChanged -= itemGridView_SelectionChanged;
+        }
+
         private async Task InitFavoritesStore()
         {
             bool fileExists = true;

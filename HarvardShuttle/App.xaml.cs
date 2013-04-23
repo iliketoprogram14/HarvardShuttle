@@ -53,8 +53,7 @@ namespace HarvardShuttle
             Frame rootFrame = Window.Current.Content as Frame;
 
             // Do not repeat app initialization when the Window already has content,
-            // just ensure that the window is active
-            
+            // just ensure that the window is active            
             if (rootFrame == null)
             {
                 // Create a Frame to act as the navigation context and navigate to the first page
@@ -106,10 +105,10 @@ namespace HarvardShuttle
         /// </summary>
         /// <param name="sender">The source of the suspend request.</param>
         /// <param name="e">Details about the suspend request.</param>
-        private async void OnSuspending(object sender, SuspendingEventArgs e)
+        private void OnSuspending(object sender, SuspendingEventArgs e)
         {
             var deferral = e.SuspendingOperation.GetDeferral();
-            await SuspensionManager.SaveAsync();
+            //await SuspensionManager.SaveAsync();
             deferral.Complete();
         }
 

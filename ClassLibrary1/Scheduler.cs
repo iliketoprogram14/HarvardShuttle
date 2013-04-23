@@ -50,6 +50,10 @@ namespace DataStore
             string dest = doc.GetElementsByTagName("dest")[0].InnerText;
 
             Task.WaitAll(CallService(origin, dest, null));
+
+            // clean up
+            doc = null;
+            file = null;
         }
         
         private static int GetNewMinuteCountdown(string timeStr)
@@ -60,6 +64,9 @@ namespace DataStore
 
             int minuteCountdown = departHour * 60 + departMin - (DateTime.Now.TimeOfDay.Hours * 60 + DateTime.Now.TimeOfDay.Minutes);
             if (minuteCountdown < 0) minuteCountdown = (24 * 60) + minuteCountdown;
+
+            // clean up
+            time = null;
 
             return minuteCountdown;
         }
@@ -83,6 +90,9 @@ namespace DataStore
                 file = await ApplicationData.Current.LocalFolder.CreateFileAsync(store, CreationCollisionOption.ReplaceExisting);
 
             await FileIO.WriteTextAsync(file, xml);
+
+            // clean up
+            file = null;
         }
 
         private async static Task<Tuple<string, string>> CallService(string origin, string dest, List<string> results)
@@ -123,11 +133,12 @@ namespace DataStore
                     break;
             }
 
-            if (results != null && results.Count == 0) {
-                TextBlock block = new TextBlock();
-                block.Text = "No further times scheduled.";
+            if (results != null && results.Count == 0)
                 results.Add("No further times scheduled.");
-            }
+
+            // clean up
+            updater = null;
+            times.Clear(); times = null;
 
             return Tuple.Create<string, string>(newNumMinutes, newUnits);
         }
@@ -136,6 +147,7 @@ namespace DataStore
         {
             ConnectionProfile connections = NetworkInformation.GetInternetConnectionProfile();
             bool internet = connections != null && connections.GetNetworkConnectivityLevel() == NetworkConnectivityLevel.InternetAccess;
+            connections = null;
             return internet;
         }
 
@@ -162,8 +174,6 @@ namespace DataStore
             msg += minuteCountdown.ToString() + " minute" + ((minuteCountdown == 1) ? "" : "s");
 
             resultsList.Add(msg);
-
-            //resultsList.Items.Add(msg);
         }
 
         private static int AddTileNotifications(int nextMinuteCountdown, int numNotifications, string origin, string dest, TileUpdater updater)
@@ -197,6 +207,7 @@ namespace DataStore
                 tileNotification.Tag = "0";
                 updater.Update(tileNotification);
                 numNotifications++;
+                tileNotification = null;
             }
 
             nextMinuteCountdown -= numNotifications;
@@ -213,7 +224,16 @@ namespace DataStore
                 updater.AddToSchedule(tileNotification);
                 i++;
                 nextMinuteCountdown--;
+                tileNotification = null;
             }
+
+            // clean up
+            wTileTextAttributes = null;
+            tileTextAttributes = null;
+            bindElem = null;
+            node = null;
+            wTileXml = null;
+            tileXml = null;
 
             return (int)i;
         }
@@ -262,9 +282,8 @@ namespace DataStore
             var updater = TileUpdateManager.CreateTileUpdaterForApplication();
             updater.EnableNotificationQueue(true);
             updater.Clear();
-            foreach (var tile in updater.GetScheduledTileNotifications()) {
+            foreach (var tile in updater.GetScheduledTileNotifications())
                 updater.RemoveFromSchedule(tile);
-            }
             return updater;
         }
 

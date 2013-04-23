@@ -39,7 +39,6 @@ namespace HarvardShuttle
     /// </summary>
     public sealed partial class TripResults : HarvardShuttle.Common.LayoutAwarePage
     {
-        public static TileUpdater updater = null;
         private string currOrigin;
         private string currDest;
         private bool isFav;
@@ -131,8 +130,9 @@ namespace HarvardShuttle
             if (uiUpdaterTimer != null)
                 uiUpdaterTimer.Cancel();
             uiUpdaterTimer = null;
-            foreach (var child in shuttleMap.Children)
-                shuttleMap.Children.Remove(child);
+            shuttleMap.Children.Clear();
+            shuttleMap.Dispose();
+            this.ResultsList.Items.Clear();
         }
 
         #region UI Updaters
@@ -336,11 +336,13 @@ namespace HarvardShuttle
                 }
 
                 // clean up
+                routeMap.Clear();
                 routeMap = null;
             });
 
             // clean up
             routeMap2 = null;
+            scheduleResults.Item1.Clear();
             scheduleResults = null;
         }
 

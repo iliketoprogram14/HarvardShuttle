@@ -43,6 +43,10 @@ namespace DataStore
         {
             ConnectionProfile connections = NetworkInformation.GetInternetConnectionProfile();
             bool internet = connections != null && connections.GetNetworkConnectivityLevel() == NetworkConnectivityLevel.InternetAccess;
+
+            // clean up
+            connections = null;
+
             return internet;
         }
 
@@ -186,6 +190,11 @@ namespace DataStore
 
                 return nextTimeStr;
             }
+
+            public void clear()
+            {
+                timeDict.Clear();
+            }
         }
 
         private static async Task<string> RefreshCache()
@@ -212,7 +221,9 @@ namespace DataStore
             JsonObject segmentArr = obj["data"].GetObject();
 
             // clean up
+            response.Dispose();
             response = null;
+            client.Dispose();
             client = null;
 
             return segmentArr;
@@ -332,7 +343,9 @@ namespace DataStore
 
             // clean up
             obj = null;
+            response.Dispose();
             response = null;
+            client.Dispose();
             client = null;
             common_routes = null;
             idsAndCommonRotes = null;
@@ -399,7 +412,9 @@ namespace DataStore
             // clean up
             segmentMap = null;
             obj = null;
+            response.Dispose();
             response = null;
+            client.Dispose();
             client = null;
             common_routes = null;
             idsAndCommonRotes = null;
@@ -482,7 +497,7 @@ namespace DataStore
             obj = null;
             routes = null;
             routes_and_ids = null;
-            timeDict = null;
+            timeDict.clear(); timeDict = null;
 
             return times;
         }
@@ -517,10 +532,11 @@ namespace DataStore
             }
 
             // cleanup
-            client = null;
-            derp = null;
-            derp2 = null;
             obj = null;
+            response.Dispose();
+            response = null;
+            client.Dispose();
+            client = null;
 
             return locsWithIDs;
         }
